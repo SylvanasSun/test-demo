@@ -6,6 +6,8 @@ import com.sun.sylvanas.pattern.proxy.CglibProxy;
 import com.sun.sylvanas.pattern.proxy.Moveable;
 import org.junit.Test;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 /**
@@ -28,6 +30,21 @@ public class ProxyTest {
         Moveable car = new Car();
         CglibProxy cglibProxy = new CglibProxy();
         Moveable carProxy = (Moveable) cglibProxy.getProxy(car.getClass());
+        carProxy.move();
+    }
+
+    @Test
+    public void test03() throws InterruptedException {
+        final Moveable car = new Car();
+        Moveable carProxy = (Moveable) Proxy.newProxyInstance(car.getClass().getClassLoader(),
+                car.getClass().getInterfaces(), new InvocationHandler() {
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        System.out.println("Hello...");
+                        method.invoke(car,args);
+                        System.out.println("World!");
+                        return null;
+                    }
+                });
         carProxy.move();
     }
 
