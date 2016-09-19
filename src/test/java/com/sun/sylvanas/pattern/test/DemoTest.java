@@ -1,0 +1,34 @@
+package com.sun.sylvanas.pattern.test;
+
+import org.junit.Test;
+
+/**
+ *
+ *
+ * Created by sylvanasp on 2016/9/19.
+ */
+public class DemoTest {
+
+    /**
+     * 自动拆装箱测试
+     * 包装类的"=="运算在不遇到算术运算的情况下不会自动拆箱.
+     * equals()方法不处理数据转型的关系.
+     */
+    @Test
+    public void test01() {
+        Integer a = 1;
+        Integer b = 2;
+        Integer c = 3;
+        Integer d = 3;
+        Integer e = 321;
+        Integer f = 321;
+        Long g = 3L;
+        System.out.println(c == d); //true
+        System.out.println(e == f); //false
+        System.out.println(c == (a + b)); //true
+        System.out.println(c.equals(a + b)); //true
+        System.out.println(g == (a + b)); // true
+        System.out.println(g.equals(a + b)); //false
+    }
+
+}
