@@ -34,6 +34,17 @@
             <artifactId>commons-io</artifactId>
             <version>2.5</version>
         </dependency>
+        <!-- 第三方加密包 -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.55</version>
+        </dependency>
         <!-- 用于把程序的字节码转换为使用invokedynamic的简单工具 -->
         <dependency>
             <groupId>org.commonjava.indy</groupId>
