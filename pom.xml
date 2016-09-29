@@ -45,6 +45,12 @@
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.55</version>
         </dependency>
+        <!-- QR Code 二维码生成组件 -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.2.0</version>
+        </dependency>
         <!-- 用于把程序的字节码转换为使用invokedynamic的简单工具 -->
         <dependency>
             <groupId>org.commonjava.indy</groupId>
