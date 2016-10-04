@@ -27,9 +27,10 @@ public class GnericMethod {
 
     /**
      * 根据元素的自然顺序计算列表的最大值并返回
+     * 因为所有的Comparable和Comparator都是消费者,所以根据PECS原则使用super
      */
-    public static <T extends Comparable<T>> T max(List<T> list) {
-        Iterator<T> iterator = list.iterator();
+    public static <T extends Comparable<? super T>> T max(List<? extends T> list) {
+        Iterator<? extends T> iterator = list.iterator();
         T result = iterator.next();
         while (iterator.hasNext()) {
             T t = iterator.next();
