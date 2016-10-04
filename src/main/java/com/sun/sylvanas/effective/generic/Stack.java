@@ -1,6 +1,7 @@
 package com.sun.sylvanas.effective.generic;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EmptyStackException;
 
 /**
@@ -25,12 +26,31 @@ public class Stack<E> {
         elements[size++] = e;
     }
 
+    /**
+     * 通配符一般遵循PECS原则,即: Producer-extends Consumer-super.
+     * 生产者使用extends,消费者使用super
+     */
+    public void pushAll(Iterable<? extends E> src) {
+        for (E e : src) {
+            push(e);
+        }
+    }
+
     public E pop() {
         if (size == 0)
             throw new EmptyStackException();
         E result = elements[--size];
         elements[size] = null;
         return result;
+    }
+
+    /**
+     * 弹出所有元素并放入参数列表dst集合中
+     */
+    public void popAll(Collection<? super E> dst) {
+        while (!isEmpty()) {
+            dst.add(pop());
+        }
     }
 
     public boolean isEmpty() {
