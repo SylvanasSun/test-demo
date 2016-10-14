@@ -2,6 +2,7 @@ package com.sun.sylvanas.io;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
@@ -15,6 +16,12 @@ public class IOUtils {
     public static void printHex(File file) throws IOException {
         if (file == null) {
             throw new IllegalArgumentException(file + "is null");
+        }
+        if (!file.exists()) {
+            throw new IllegalArgumentException(file + "不存在");
+        }
+        if (!file.isFile()) {
+            throw new IllegalArgumentException(file + "不是文件");
         }
         FileInputStream inputStream = new FileInputStream(file);
         int b;
@@ -39,6 +46,12 @@ public class IOUtils {
         if (file == null) {
             throw new IllegalArgumentException(file + "is null");
         }
+        if (!file.exists()) {
+            throw new IllegalArgumentException(file + "不存在");
+        }
+        if (!file.isFile()) {
+            throw new IllegalArgumentException(file + "不是文件");
+        }
         FileInputStream inputStream = new FileInputStream(file);
         byte[] buf = new byte[20 * 1024];//字节缓存区,20k
         int bytes;
@@ -57,6 +70,36 @@ public class IOUtils {
                 }
             }
         }
+        inputStream.close();
+    }
+
+    /**
+     * 拷贝文件
+     */
+    public static void copyFile(File srcFile, File destFile, boolean superadd) throws IOException {
+        if (srcFile == null) {
+            throw new IllegalArgumentException(srcFile + "is null");
+        }
+        if (destFile == null) {
+            throw new IllegalArgumentException(destFile + "is null");
+        }
+        if (!srcFile.exists()) {
+            throw new IllegalArgumentException(srcFile + "不存在");
+        }
+        if (!srcFile.isFile()) {
+            throw new IllegalArgumentException(srcFile + "不是文件");
+        }
+
+        FileInputStream inputStream = new FileInputStream(srcFile);
+        FileOutputStream outputStream = new FileOutputStream(destFile, superadd);
+        byte[] buf = new byte[20 * 1024];
+        int bytes;
+        while ((bytes = inputStream.read(buf, 0, buf.length)) != -1) {
+            outputStream.write(buf, 0, buf.length);
+            outputStream.flush();
+        }
+
+        outputStream.close();
         inputStream.close();
     }
 
