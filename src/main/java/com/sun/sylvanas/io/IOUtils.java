@@ -1,9 +1,6 @@
 package com.sun.sylvanas.io;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Created by sylvanasp on 2016/10/14.
@@ -84,23 +81,79 @@ public class IOUtils {
             throw new IllegalArgumentException(destFile + "is null");
         }
         if (!srcFile.exists()) {
-            throw new IllegalArgumentException(srcFile + "不存在");
+            throw new IllegalArgumentException(srcFile + "no exists");
         }
         if (!srcFile.isFile()) {
-            throw new IllegalArgumentException(srcFile + "不是文件");
+            throw new IllegalArgumentException(srcFile + "isn't file");
         }
 
         FileInputStream inputStream = new FileInputStream(srcFile);
-        FileOutputStream outputStream = new FileOutputStream(destFile, superadd);
-        byte[] buf = new byte[20 * 1024];
+        FileOutputStream out = new FileOutputStream(destFile, superadd);
         int bytes;
+        byte[] buf = new byte[10 * 1024];
         while ((bytes = inputStream.read(buf, 0, buf.length)) != -1) {
-            outputStream.write(buf, 0, buf.length);
-            outputStream.flush();
+            out.write(buf, 0, bytes);
+        }
+        out.close();
+        inputStream.close();
+    }
+
+    public static void copyFileByBuffer(File srcFile, File destFile, boolean superadd) throws IOException {
+        if (srcFile == null) {
+            throw new IllegalArgumentException(srcFile + "is null");
+        }
+        if (destFile == null) {
+            throw new IllegalArgumentException(destFile + "is null");
+        }
+        if (!srcFile.exists()) {
+            throw new IllegalArgumentException(srcFile + "no exists");
+        }
+        if (!srcFile.isFile()) {
+            throw new IllegalArgumentException(srcFile + "isn't file");
         }
 
-        outputStream.close();
-        inputStream.close();
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(srcFile));
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destFile, superadd));
+        byte[] buf = new byte[20 * 1024];
+        int bytes;
+        while ((bytes = bis.read(buf, 0, buf.length)) != -1) {
+            bos.write(buf, 0, bytes);
+        }
+        bos.flush();
+        bos.close();
+        bis.close();
+    }
+
+    /**
+     * 使用字符流拷贝文件
+     */
+    public static void copyFileByChar(File srcFile, File destFile, boolean superadd)
+            throws IOException {
+        if (srcFile == null) {
+            throw new IllegalArgumentException(srcFile + "is null");
+        }
+        if (destFile == null) {
+            throw new IllegalArgumentException(destFile + "is null");
+        }
+        if (!srcFile.exists()) {
+            throw new IllegalArgumentException(srcFile + "no exists");
+        }
+        if (!srcFile.isFile()) {
+            throw new IllegalArgumentException(srcFile + "isn't file");
+        }
+
+        BufferedReader br = new BufferedReader
+                (new InputStreamReader(new FileInputStream(srcFile)));
+        BufferedWriter bw = new BufferedWriter
+                (new OutputStreamWriter(new FileOutputStream(destFile, superadd)));
+        String s;
+        while ((s = br.readLine()) != null) {
+            bw.write(s);
+            bw.newLine();
+        }
+        bw.flush();
+        bw.close();
+        br.close();
     }
 
 }
