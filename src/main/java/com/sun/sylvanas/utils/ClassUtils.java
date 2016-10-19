@@ -1,5 +1,6 @@
 package com.sun.sylvanas.utils;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -9,8 +10,10 @@ import java.lang.reflect.Method;
 public class ClassUtils {
 
     public static void main(String[] args) {
-        printMethodMessage(new Integer(1));
-        printFieldMessage(new Integer(1));
+        Integer i = new Integer(1);
+        printConstructionMessage(i);
+        printMethodMessage(i);
+        printFieldMessage(i);
     }
 
     public static void printMethodMessage(Object obj) {
@@ -52,5 +55,24 @@ public class ClassUtils {
         }
     }
 
+    public static void printConstructionMessage(Object obj) {
+        Class<?> objClass = obj.getClass();
+
+        Constructor<?>[] constructors = objClass.getDeclaredConstructors();
+        System.out.println("--------Construction Message--------");
+        for (int i = 0; i < constructors.length; i++) {
+            System.out.print(constructors[i].getName() + "(");
+
+            Class<?>[] parameterTypes = constructors[i].getParameterTypes();
+            for (int j = 0; j < parameterTypes.length; j++) {
+                if (j != parameterTypes.length - 1) {
+                    System.out.print(parameterTypes[j].getName() + ",");
+                } else {
+                    System.out.print(parameterTypes[j].getName() + ")");
+                }
+            }
+            System.out.println();
+        }
+    }
 
 }
