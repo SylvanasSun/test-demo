@@ -2,6 +2,7 @@ package com.sun.sylvanas.utils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -17,6 +18,9 @@ public class ClassUtils {
     }
 
     public static void printMethodMessage(Object obj) {
+        if (obj == null) {
+            throw new IllegalArgumentException(obj + "is null");
+        }
         Class<?> objClass = obj.getClass();
 
         Method[] methods = objClass.getDeclaredMethods();
@@ -41,6 +45,9 @@ public class ClassUtils {
     }
 
     public static void printFieldMessage(Object obj) {
+        if (obj == null) {
+            throw new IllegalArgumentException(obj + "is null");
+        }
         Class<?> objClass = obj.getClass();
 
         Field[] fields = objClass.getDeclaredFields();
@@ -56,6 +63,9 @@ public class ClassUtils {
     }
 
     public static void printConstructionMessage(Object obj) {
+        if (obj == null) {
+            throw new IllegalArgumentException(obj + "is null");
+        }
         Class<?> objClass = obj.getClass();
 
         Constructor<?>[] constructors = objClass.getDeclaredConstructors();
@@ -72,6 +82,31 @@ public class ClassUtils {
                 }
             }
             System.out.println();
+        }
+    }
+
+    public static void invokeMethod(Object obj, String methodName, Object[] params)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        if (methodName == null || "".equals(methodName)) {
+            throw new IllegalArgumentException(methodName + "is empty");
+        }
+        if (obj == null) {
+            throw new IllegalArgumentException(obj + "is null");
+        }
+        Class<?> objClass = obj.getClass();
+        if (params.length == 0 || params == null) {
+            Method method = objClass.getDeclaredMethod(methodName);
+            method.invoke(obj);
+        } else {
+            Class[] paramClass = new Class[params.length];
+            // 将参数数组封装到参数类类型数组中
+            for (int i = 0; i < params.length; i++) {
+                for (int j = 0; j < paramClass.length; j++) {
+                    paramClass[j] = params[i].getClass();
+                }
+            }
+            Method method = objClass.getDeclaredMethod(methodName, paramClass);
+            method.invoke(obj, paramClass);
         }
     }
 
