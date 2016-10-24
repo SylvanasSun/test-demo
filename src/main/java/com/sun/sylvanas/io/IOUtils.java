@@ -33,7 +33,9 @@ public class IOUtils {
                 System.out.println();
             }
         }
-        inputStream.close();
+        if(inputStream != null) {
+            inputStream.close();
+        }
     }
 
     /**
@@ -67,7 +69,9 @@ public class IOUtils {
                 }
             }
         }
-        inputStream.close();
+        if(inputStream != null) {
+            inputStream.close();
+        }
     }
 
     /**
@@ -94,8 +98,12 @@ public class IOUtils {
         while ((bytes = inputStream.read(buf, 0, buf.length)) != -1) {
             out.write(buf, 0, bytes);
         }
-        out.close();
-        inputStream.close();
+        if(out != null) {
+            out.close();
+        }
+        if(inputStream != null) {
+            inputStream.close();
+        }
     }
 
     public static void copyFileByBuffer(File srcFile, File destFile, boolean superadd) throws IOException {
@@ -120,8 +128,12 @@ public class IOUtils {
             bos.write(buf, 0, bytes);
         }
         bos.flush();
-        bos.close();
-        bis.close();
+        if(bos != null) {
+            bos.close();
+        }
+        if(bis != null) {
+            bis.close();
+        }
     }
 
     /**
@@ -152,8 +164,12 @@ public class IOUtils {
             bw.newLine();
         }
         bw.flush();
-        bw.close();
-        br.close();
+        if(bw != null) {
+            bw.close();
+        }
+        if(br != null) {
+            br.close();
+        }
     }
 
 }
