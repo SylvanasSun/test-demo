@@ -32,4 +32,11 @@ public class RegexStringUtils {
         return "";
     }
 
+    public static void main(String[] args) {
+        String patternStr = ".+?world";
+        String targetStr = "hello world";
+        String result = RegexStringUtils.regexString(patternStr, targetStr, 0);
+        System.out.println(result);
+    }
+
 }

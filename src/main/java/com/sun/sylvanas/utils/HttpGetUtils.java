@@ -40,13 +40,48 @@ public class HttpGetUtils {
                     result = readResponse(entity, "utf-8");
                 }
             } finally {
-                response.close();
+                if (response != null) {
+                    response.close();
+                }
                 httpClient.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return result;
+    }
+
+    /**
+     * Get Method
+     * 返回文件路径并下载
+     */
+    public static String getWithDownload(String url, String dirPath, String suffix) {
+        if (url == null || "".equals(url)) {
+            throw new IllegalArgumentException("url为空");
+        }
+        String filename = "";
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet(url);
+        try {
+            CloseableHttpResponse response = httpClient.execute(httpGet);
+            try {
+                if (response != null &&
+                        response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                    System.out.println(response.getStatusLine());
+                    HttpEntity entity = response.getEntity();
+                    filename = download(entity, dirPath, suffix);
+                }
+
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
+                httpClient.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return filename;
     }
 
     /**
@@ -100,7 +135,7 @@ public class HttpGetUtils {
         String fileName = "sun_" + random() + suffix;
 
         File file = new File(dirPath);
-        if (file == null || !file.exists()) {
+        if (!file.exists()) {
             file.mkdir();
         }
 
@@ -109,14 +144,6 @@ public class HttpGetUtils {
         File realFile = new File(realPath);
         if (realFile.exists()) {
             download(entity, dirPath, suffix);
-        }
-
-        if (realFile == null || !realFile.exists()) {
-            try {
-                realFile.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
 
         BufferedOutputStream out = null;
@@ -164,6 +191,16 @@ public class HttpGetUtils {
 
         BASE64Encoder encoder = new BASE64Encoder();
         return encoder.encode(String.valueOf(random).getBytes());
+    }
+
+    public static void main(String[] args) {
+
+        String url = "https://www.baidu.com/";
+        String regex = "hidefocus.+?src=\"//(.+?)\"";
+        String result = HttpGetUtils.get(url);
+        System.out.println(result);
+        String regexAfter = RegexStringUtils.regexString(regex, result, 1);
+        System.out.println(regexAfter);
     }
 
 }
