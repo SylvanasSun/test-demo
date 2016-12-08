@@ -79,6 +79,12 @@
             <artifactId>htmlparser</artifactId>
             <version>2.1</version>
         </dependency>
+        <!-- 无锁的缓存队列 -->
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.3.2</version>
+        </dependency>
     </dependencies>
 
 </project>
