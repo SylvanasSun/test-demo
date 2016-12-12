@@ -123,7 +123,7 @@ public class NIOEchoServer {
         }
     }
 
-    private void doRead(SelectionKey sk) {
+    private void doRead(SelectionKey sk) throws IOException {
         SocketChannel channel = (SocketChannel) sk.channel();
         ByteBuffer bb = ByteBuffer.allocate(8192);
         int len;
@@ -145,7 +145,7 @@ public class NIOEchoServer {
         threadPool.execute(new HandleMsg(sk, bb));
     }
 
-    private void doWrite(SelectionKey sk) {
+    private void doWrite(SelectionKey sk) throws IOException {
         SocketChannel channel = (SocketChannel) sk.channel();
         EchoClient echoClient = (EchoClient) sk.attachment();
         LinkedList<ByteBuffer> outputQueue = echoClient.getOutputQueue();
@@ -189,7 +189,7 @@ public class NIOEchoServer {
         }
     }
 
-    private void disconnect(SelectionKey sk) {
-        sk.cancel();
+    private void disconnect(SelectionKey sk) throws IOException {
+        sk.channel().close();
     }
 }
