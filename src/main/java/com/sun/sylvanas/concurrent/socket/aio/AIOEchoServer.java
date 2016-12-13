@@ -27,13 +27,13 @@ public class AIOEchoServer {
     }
 
     public void start() {
-        System.out.println("Server listen on " + PORT);
+        System.out.println("Server start PORT:" + PORT);
         //注册事件和事件完成后的处理器
         //AsynchronousServerSocketChannel.accept()会立即返回,它并不会真的去等待客户端
         //第一个参数为附件,可以是任意类型,作用是让当前线程和后续的回调方法可以共享信息
         //第二个参数是CompletionHandler接口
         server.accept(null, new CompletionHandler<AsynchronousSocketChannel, Object>() {
-            final ByteBuffer buffer = ByteBuffer.allocate(1024);
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
 
             /**
              * 在accept()成功时调用
