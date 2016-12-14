@@ -8,13 +8,6 @@ package com.sun.sylvanas.utils.array;
 public class ArrayUtils {
 
     /**
-     * 用来表示排序类别的枚举类
-     */
-    public enum SortType {
-        BUBBING, SHELL, ODD_EVEN, INSERT;
-    }
-
-    /**
      * 根据给出的value找出数组当中相匹配的值
      *
      * @param value 要搜索的值
