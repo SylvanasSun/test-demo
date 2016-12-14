@@ -1,6 +1,6 @@
 package com.sun.sylvanas.concurrent.socket.nio;
 
-import com.sun.sylvanas.concurrent.socket.nio.bean.EchoClient;
+import com.sun.sylvanas.concurrent.threadPool.TraceThreadPoolExecutor;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -14,7 +14,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 使用NIO构造的EchoServer.
@@ -35,14 +36,31 @@ import java.util.concurrent.Executors;
  */
 public class NIOEchoServer {
     private Selector selector;//用于处理所有的网络连接
-    private ExecutorService threadPool = Executors.newCachedThreadPool();
+    //线程池
+    private ExecutorService threadPool = new TraceThreadPoolExecutor(10, 10, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>()) {
+        @Override
+        protected void beforeExecute(Thread t, Runnable r) {
+            System.out.println("准备执行:" + t.getId() + "-" + t.getName());
+        }
+
+        @Override
+        protected void afterExecute(Runnable r, Throwable t) {
+            System.out.println("执行完毕:" + r);
+        }
+
+        @Override
+        protected void terminated() {
+            System.out.println("线程池关闭.");
+        }
+    };
     //用于统计在某一个Socket上花费的时间,key为Socket,value为时间戳
-    public static Map<Socket, Long> time_status = new HashMap<Socket, Long>(10240);
+    private static Map<Socket, Long> time_status = new HashMap<Socket, Long>(10240);
 
     /**
      * 核心方法,用于启动NIO Server
      */
-    private void startServer() throws IOException {
+    public void startServer() throws IOException {
         //通过工厂方法获得一个Selector对象的实例
         selector = SelectorProvider.provider().openSelector();
         //获得表示服务端的SocketChannel实例
@@ -51,7 +69,7 @@ public class NIOEchoServer {
         ssc.configureBlocking(false);
 
         //端口绑定,将这个SocketChannel绑定在8000端口
-        InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(), 8000);
+        InetSocketAddress isa = new InetSocketAddress(8000);
         ssc.socket().bind(isa);
         // 将这个ServerSocketChannel绑定到Selector上,并注册它感兴趣的操作为Accept
         // 当Selector发现ServerSocketChannel有新的客户端连接时,就会通知ServerSocketChannel进行处理
@@ -81,11 +99,10 @@ public class NIOEchoServer {
                 //判断Channel是否已经可以读了,如果是就进行读取(doRead())
                 //这里为了统计系统处理每一个连接的时间,在读取数据之前记录了一个时间戳
                 else if (sk.isValid() && sk.isReadable()) {
-                    if (!time_status.containsKey(((SocketChannel) sk.channel()).socket())) {
-                        time_status.put
-                                (((SocketChannel) sk.channel()).socket(), System.currentTimeMillis());
-                        doRead(sk);
-                    }
+                    if (!time_status.containsKey(((SocketChannel) sk.channel()).socket()))
+                        time_status.put(((SocketChannel) sk.channel()).socket(),
+                                System.currentTimeMillis());
+                    doRead(sk);
                 }
                 //判断Channel是否已经可以写了,如果是就进行写入(doWrite())
                 //同时在写入完成后,根据读取前的时间戳,输出处理这个Socket连接的耗时
@@ -93,9 +110,28 @@ public class NIOEchoServer {
                     doWrite(sk);
                     e = System.currentTimeMillis();
                     long b = time_status.remove(((SocketChannel) sk.channel()).socket());
-                    System.out.println("spend:" + (e - b) + "ms");
+                    System.out.println("Spend:" + (e - b) + "ms");
                 }
             }
+        }
+    }
+
+    /**
+     * 存储了一个链表队列,用于存放ByteBuffer.
+     */
+    private static class MessageData {
+        private LinkedList<ByteBuffer> queue;
+
+        public MessageData() {
+            queue = new LinkedList<ByteBuffer>();
+        }
+
+        public LinkedList<ByteBuffer> getQueue() {
+            return queue;
+        }
+
+        public void enqueue(ByteBuffer buffer) {
+            queue.addFirst(buffer);
         }
     }
 
@@ -111,9 +147,9 @@ public class NIOEchoServer {
             clientChannel.configureBlocking(false);
             //将新生成的Channel注册到Selector选择器上,并只对读操作感兴趣
             SelectionKey clientKey = clientChannel.register(selector, SelectionKey.OP_READ);
-            EchoClient echoClient = new EchoClient();
-            //将EchoClient附加到表示这个连接的SelectionKey上
-            clientKey.attach(echoClient);
+            MessageData messageData = new MessageData();
+            //将MessageData附加到表示这个连接的SelectionKey上
+            clientKey.attach(messageData);
 
             InetAddress clientAddress = clientChannel.socket().getInetAddress();
             System.out.println("Accepted connection from " + clientAddress.getHostAddress() + ".");
@@ -147,8 +183,8 @@ public class NIOEchoServer {
 
     private void doWrite(SelectionKey sk) throws IOException {
         SocketChannel channel = (SocketChannel) sk.channel();
-        EchoClient echoClient = (EchoClient) sk.attachment();
-        LinkedList<ByteBuffer> outputQueue = echoClient.getOutputQueue();
+        MessageData data = (MessageData) sk.attachment();
+        LinkedList<ByteBuffer> outputQueue = data.getQueue();
 
         ByteBuffer bb = outputQueue.getLast();
         try {
@@ -181,8 +217,8 @@ public class NIOEchoServer {
         }
 
         public void run() {
-            EchoClient echoClient = (EchoClient) sk.attachment();
-            echoClient.enqueue(bb);
+            MessageData data = (MessageData) sk.attachment();
+            data.enqueue(bb);
             sk.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
             //强迫selector立即返回
             selector.wakeup();
@@ -191,5 +227,9 @@ public class NIOEchoServer {
 
     private void disconnect(SelectionKey sk) throws IOException {
         sk.channel().close();
+    }
+
+    public static void main(String[] args) throws IOException {
+        new NIOEchoServer().startServer();
     }
 }
