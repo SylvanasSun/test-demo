@@ -20,6 +20,17 @@ public class CompletableFutureDemo2 {
     }
 
     /**
+     * 流式调用案例
+     */
+    public static void streamInvoke() throws ExecutionException, InterruptedException {
+        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> calc(60))
+                .thenApply((i) -> Integer.toString(i))
+                .thenApply((str) -> "\"" + str + "\"")
+                .thenAccept(System.out::println);
+        future.get();
+    }
+
+    /**
      * 使用CompletableFuture.supplyAsync()构造一个CompletableFuture实例.
      * 在supplyAsync()函数中,它会在一个新的线程中,执行传入的参数.
      * 在CompletableFuture中,有以下几个类似的工厂方法:
