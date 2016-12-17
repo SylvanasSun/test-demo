@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  * Created by sylvanasp on 2016/12/17.
  */
 public class AkkaInboxDemo {
-    static enum Msg {
+    public static enum Msg {
         WORKING, DONE, CLOSE;
     }
 
