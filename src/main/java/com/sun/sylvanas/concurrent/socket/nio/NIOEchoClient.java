@@ -70,9 +70,9 @@ public class NIOEchoClient {
             buffer.flip();
             System.out.println("Form Server Echo:" + new String(buffer.array()).trim());
             //释放客户端
+            System.out.println("Channel and Selector has been release.");
             channel.close();
             key.selector().close();
-            System.out.println("Channel and Selector has been release.");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to read.");
