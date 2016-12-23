@@ -20,9 +20,6 @@ public class MultiThreadArrays {
      * 底层的搜索函数,每个线程都要执行这个函数进行搜索.
      */
     private static int baseSearch(int searchValue, int begin, int end, int[] arr) {
-        if (arr == null || arr.length < 0) {
-            throw new IllegalArgumentException("array is null");
-        }
         for (int i = begin; i < end; i++) {
             //判断其他线程是否已经找到目标,如果找到则立即返回
             if (searchResult.get() >= 0) {
@@ -165,7 +162,7 @@ public class MultiThreadArrays {
 
     public static void sort(int[] arr, SortType sortType) throws InterruptedException {
         if (arr == null || arr.length < 0) {
-            throw new IllegalArgumentException("array is null.");
+            throw new IllegalArgumentException("array is null or length less than 0.");
         }
         if (sortType == null) {
             oddEvenSort(arr);
@@ -180,6 +177,9 @@ public class MultiThreadArrays {
     }
 
     public static int search(int searchValue, int[] arr) throws ExecutionException, InterruptedException {
+        if (arr == null || arr.length < 0) {
+            throw new IllegalArgumentException("array is null or length less than 0.");
+        }
         List<Future<Integer>> futureList = new ArrayList<>();
         int subArraySize = arr.length / SEARCH_THREAD_NUM + 1;//子数组长度
         for (int i = 0; i < arr.length; i += subArraySize) {
