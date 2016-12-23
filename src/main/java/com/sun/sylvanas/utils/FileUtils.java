@@ -214,17 +214,18 @@ public class FileUtils {
         for (int i = 0; i < files.length; i++) {
             if (files[i].isFile()) {
                 flag = copyFile(files[i].getAbsolutePath(), destPath + files[i].getName(), overlay);
-                if (!flag) return false;
+                if (!flag) break;
             }
             if (files[i].isDirectory()) {
                 flag = copyDirs(files[i].getAbsolutePath(), destPath + files[i].getName(), overlay);
-                if (!flag) return false;
+                if (!flag) break;
             }
         }
         if (flag) {
+            System.out.println(srcPath + " copy to " + destPath + " success!");
             return true;
         } else {
-            System.out.println("copy dirs failed.");
+            System.out.println(srcPath + " copy to " + destPath + " failed.");
             return false;
         }
     }
