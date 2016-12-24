@@ -200,7 +200,8 @@ public class FileUtils {
                 System.out.println("copy dirs fail: " + destPath + " is exists.");
                 return false;
             }
-        } else {
+        }
+        if (!destFile.exists()) {
             //不存在则创建该目录
             if (!destFile.mkdirs()) {
                 System.out.println("copy dirs fail: " + destPath + " create failed.");
@@ -208,10 +209,15 @@ public class FileUtils {
             }
         }
 
+
         //遍历源目录并根据文件和目录的类型进行递归调用
         File[] files = srcFile.listFiles();
         boolean flag = false;
-        for (int i = 0; i < files.length; i++) {
+        for (
+                int i = 0;
+                i < files.length; i++)
+
+        {
             if (files[i].isFile()) {
                 flag = copyFile(files[i].getAbsolutePath(), destPath + files[i].getName(), overlay);
                 if (!flag) break;
@@ -221,13 +227,19 @@ public class FileUtils {
                 if (!flag) break;
             }
         }
-        if (flag) {
+
+        if (flag)
+
+        {
             System.out.println(srcPath + " copy to " + destPath + " success!");
             return true;
-        } else {
+        } else
+
+        {
             System.out.println(srcPath + " copy to " + destPath + " failed.");
             return false;
         }
+
     }
 
     public static void stopWatch() {
