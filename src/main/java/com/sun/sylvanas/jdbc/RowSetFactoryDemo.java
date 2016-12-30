@@ -1,11 +1,12 @@
 package com.sun.sylvanas.jdbc;
 
+import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.JdbcRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Properties;
 
 /**
@@ -59,5 +60,39 @@ public class RowSetFactoryDemo {
                 }
             }
         }
+    }
+
+    /**
+     * 离线的RowSet
+     * 在资源关闭的情况下可以使用以下伪代码同步修改数据:
+     * Connection conn = DriverManager.getConnection(url,user,pass);
+     * conn.setAutoCommit(false);
+     * rowSet.acceptChanges(conn); //把对RowSet所做的修改同步到底层数据库
+     * 为了防止一次读取的资源过大导致内存溢出,CachedRowSet提供了分页功能(一次只装载ResultSet里的某几条记录)
+     * populate(ResultSet rs,int startRow):使用给定的ResultSet装填RowSet,从ResultSet的第startRow条记录开始
+     * setPageSize(int pageSize):设置CachedRowSet每次返回多少条记录
+     * previousPage():在底层ResultSet可用的情况下,让CachedRowSet读取上一页记录
+     * nextPage():在底层ResultSet可用的情况下,让CachedRowSet读取下一页记录
+     * 例:
+     * cachedRs.setPageSize(pageSize);
+     * cachedRs.populate(rs,(page - 1) * pageSize + 1);
+     */
+    public void offline(String sql) throws ClassNotFoundException, SQLException {
+        //加载驱动
+        Class.forName(driver);
+        //获取数据库连接
+        Connection connection = DriverManager.getConnection(url, user, pass);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql);
+        //创建RowSet
+        RowSetFactory factory = RowSetProvider.newFactory();
+        //创建CachedRowSet
+        CachedRowSet rowSet = factory.createCachedRowSet();
+        //使用ResultSet装填RowSet
+        rowSet.populate(resultSet);
+        //关闭资源
+        resultSet.close();
+        statement.close();
+        connection.close();
     }
 }
