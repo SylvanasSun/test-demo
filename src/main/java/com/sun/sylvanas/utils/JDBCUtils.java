@@ -3,6 +3,7 @@ package com.sun.sylvanas.utils;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.log4j.Logger;
 
+import javax.sql.RowSet;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetProvider;
 import java.beans.PropertyVetoException;
@@ -60,7 +61,7 @@ public class JDBCUtils {
             dataSource.setMaxStatements(180);
         } catch (PropertyVetoException e) {
             e.printStackTrace();
-            logger.error("Error: " + JDBCUtils.class.getName() + " dataSource initializer fail.");
+            logger.error("Error: " + JDBCUtils.class.getName() + " dataSource initializer fail.", e);
         }
     }
 
@@ -80,21 +81,7 @@ public class JDBCUtils {
             statement = connection.prepareStatement(sql);
             //设置参数
             if (param != null && param.length > 0) {
-                final AtomicInteger count = new AtomicInteger(1);
-                Arrays.stream(param).forEach((i) -> {
-                    try {
-                        statement.setObject(count.getAndIncrement(), i);
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        logger.error("Error: " + JDBCUtils.class.getName() + " set sql param fail.", e);
-                        try {
-                            connection.rollback();
-                        } catch (SQLException e1) {
-                            e1.printStackTrace();
-                            logger.error("Error: " + JDBCUtils.class.getName() + " transaction rollback fail.", e1);
-                        }
-                    }
-                });
+                setParam(param);
             }
             //执行sql
             boolean execute = statement.execute();
@@ -120,7 +107,7 @@ public class JDBCUtils {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            logger.error("Error: " + JDBCUtils.class.getName() + " sql fail.", e);
+            logger.error("Error: " + JDBCUtils.class.getName() + " execute fail.", e);
             try {
                 connection.rollback();
             } catch (SQLException e1) {
@@ -157,5 +144,178 @@ public class JDBCUtils {
         return JDBCUtils.execute(sql, null, null, param);
     }
 
+    /**
+     * 对应JDBC API中的executeQuery.
+     *
+     * @param sql      sql语句
+     * @param pageSize 每页个数
+     * @param page     要查询的页
+     * @param param    参数
+     * @return 返回一个分页的离线RowSet.
+     */
+    public static RowSet executeQuery(String sql, Integer pageSize, Integer page, Object... param) {
+        try {
+            connection = dataSource.getConnection();
+            statement = connection.prepareStatement(sql);
+            //设置参数
+            if (param != null && param.length > 0) {
+                setParam(param);
+            }
+            //执行sql
+            resultSet = statement.executeQuery();
+            //创建并包装RowSet
+            CachedRowSet rowSet = RowSetProvider.newFactory().createCachedRowSet();
+            //判断是否使用分页
+            if (page != null && pageSize != null) {
+                rowSet.populate(resultSet, (page - 1) * pageSize + 1);
+            } else {
+                rowSet.populate(resultSet);
+            }
+            return rowSet;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " executeQuery fail.", e);
+        } finally {
+            try {
+                if (resultSet != null)
+                    resultSet.close();
+                if (statement != null)
+                    statement.close();
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " close resource fail.", e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 对应JDBC API中的executeQuery.
+     *
+     * @param sql   sql语句
+     * @param param 参数
+     * @return 返回一个离线RowSet.
+     */
+    public static RowSet executeQuery(String sql, Object... param) {
+        return executeQuery(sql, null, null, param);
+    }
+
+    /**
+     * 对应JDBC API中的executeUpdate.
+     *
+     * @param sql   sql语句
+     * @param param 参数
+     * @return 返回影响的行数.
+     */
+    public static int executeUpdate(String sql, Object... param) {
+        try {
+            connection = dataSource.getConnection();
+            connection.setAutoCommit(false); //开启事务
+            statement = connection.prepareStatement(sql);
+            //设置参数
+            if (param != null && param.length > 0) {
+                setParam(param);
+            }
+            int result = statement.executeUpdate();
+            connection.commit(); //提交事务
+            return result;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " executeUpdate fail.", e);
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " transaction rollback fail.", e1);
+            }
+        } finally {
+            close();
+        }
+        return -1;
+    }
+
+    /**
+     * 对应JDBC API中的executeUpdateBatch.
+     * 这个方法使用了Statement,它的效率与安全性都不如PrepareStatement
+     *
+     * @param sql sql语句
+     * @return 返回影响的行数.
+     */
+    @SuppressWarnings("Duplicates")
+    public static int[] executeUpdateBatch(String... sql) {
+        Statement stat = null;
+        try {
+            connection = dataSource.getConnection();
+            connection.setAutoCommit(false); //开启事务
+            stat = connection.createStatement();
+            if (sql != null && sql.length > 0) {
+                for (String s : sql) {
+                    stat.addBatch(s);
+                }
+            }
+            //执行查询
+            int[] results = stat.executeBatch();
+            connection.commit(); //提交事务
+            return results;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " executeUpdateBatch fail.", e);
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " transaction rollback fail.", e1);
+            }
+        } finally {
+            try {
+                if (stat != null)
+                    stat.close();
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " close resource fail.", e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 设置参数
+     *
+     * @param param 参数
+     */
+    private static void setParam(Object[] param) {
+        final AtomicInteger count = new AtomicInteger(1);
+        Arrays.stream(param).forEach((i) -> {
+            try {
+                statement.setObject(count.getAndIncrement(), i);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " set sql param fail.", e);
+                try {
+                    connection.rollback();
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                    logger.error("Error: " + JDBCUtils.class.getName() + " transaction rollback fail.", e1);
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("Duplicates")
+    private static void close() {
+        try {
+            if (statement != null)
+                statement.close();
+            if (connection != null)
+                connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " close resource fail.", e);
+        }
+    }
 
 }
