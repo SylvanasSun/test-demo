@@ -52,6 +52,12 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.32</version>
         </dependency>
+        <!-- c3p0连接池 -->
+        <dependency>
+            <groupId>c3p0</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.1.2</version>
+        </dependency>
         <!-- 第三方加密包 -->
         <dependency>
             <groupId>commons-codec</groupId>
