@@ -7,8 +7,8 @@ import javax.sql.RowSet;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetProvider;
 import java.beans.PropertyVetoException;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.Properties;
@@ -38,7 +38,9 @@ public class JDBCUtils {
         logger = Logger.getLogger(JDBCUtils.class);
         properties = new Properties();
         try {
-            properties.load(new FileInputStream("db.properties"));
+//            properties.load(new FileInputStream(new File("db.properties")));
+            InputStream in = JDBCUtils.class.getClassLoader().getResourceAsStream("db.properties");
+            properties.load(in);
         } catch (IOException e) {
             e.printStackTrace();
             logger.error("Error: " + JDBCUtils.class.getName() + " properties initializer fail.", e);
@@ -277,6 +279,29 @@ public class JDBCUtils {
             } catch (SQLException e) {
                 e.printStackTrace();
                 logger.error("Error: " + JDBCUtils.class.getName() + " close resource fail.", e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获得数据库元数据
+     */
+    public static DatabaseMetaData getDatabaseMetaData() {
+        try {
+            connection = dataSource.getConnection();
+            DatabaseMetaData metaData = connection.getMetaData();
+            return metaData;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " getDatabaseMetaData fail.", e);
+        } finally {
+            try {
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("Error: " + JDBCUtils.class.getName() + " close resource fail.");
             }
         }
         return null;

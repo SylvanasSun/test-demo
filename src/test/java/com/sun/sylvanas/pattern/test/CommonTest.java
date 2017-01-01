@@ -1,7 +1,10 @@
 package com.sun.sylvanas.pattern.test;
 
+import com.sun.sylvanas.utils.JDBCUtils;
 import org.junit.Test;
 
+import javax.sql.RowSet;
+import java.io.FileNotFoundException;
 import java.sql.*;
 
 /**
@@ -9,9 +12,14 @@ import java.sql.*;
  */
 public class CommonTest {
     @Test
-    public void test01() {
-        String[] strings = {};
-        System.out.println(strings.length);
+    public void test01() throws FileNotFoundException, SQLException {
+        String sql = "SELECT * FROM TEST_STUDENT";
+        RowSet rowSet = JDBCUtils.executeQuery(sql, null);
+        while (rowSet.next()) {
+            System.out.println(rowSet.getString(1));
+            System.out.println(rowSet.getString(2));
+            System.out.println(rowSet.getString(3));
+        }
     }
 
     @Test
