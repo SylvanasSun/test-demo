@@ -1,248 +1,122 @@
 package com.sun.sylvanas.utils;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 对文件操作的工具类
  * Created by sylvanasp on 2016/12/23.
  */
 public class FileUtils {
-
-    private static boolean watchFlag = true; //监控文件标记
-
-    /**
-     * 检查参数是否有效.
-     */
-    private static void validateParam(String... param) {
-        for (int i = 0; i < param.length; i++) {
-            if ("".equals(param[i]) || param[i] == null)
-                throw new IllegalArgumentException("param is empty or null.");
+    private static Logger logger = Logger.getLogger(FileUtils.class);
+    private static boolean watchFlag = true; //监控文件标志位
+    private static ReentrantLock lock = new ReentrantLock();
+    private static ExecutorService threadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+            60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()) {
+        @Override
+        protected void beforeExecute(Thread t, Runnable r) {
+            logger.debug("DEBUG: " + FileUtils.class.getName() + " threadPool beforeExecute: " + t);
         }
-    }
+
+        @Override
+        protected void afterExecute(Runnable r, Throwable t) {
+            logger.debug("DEBUG: " + FileUtils.class.getName() + " threadPool afterExecute: " + r);
+        }
+
+        @Override
+        protected void terminated() {
+            logger.debug("DEBUG: " + FileUtils.class.getName() + " threadPool terminated.");
+        }
+    };
 
     /**
-     * 在一个目录中搜索文件.
+     * 校验字符串参数是否为空,不为空返回true,否则返回false.
      *
-     * @param srcPath  源路径
-     * @param fileName 目标文件名
-     * @return 目标文件的路径
+     * @param param 字符串参数数组
+     * @return 成功为true, 否则false
      */
-    public static Path searchFile(String srcPath, String fileName) throws IOException {
-        validateParam(srcPath, fileName);
-
-        File srcFile = new File(srcPath);
-        if (!srcFile.exists()) {
-            System.out.println("search fail: " + srcPath + " is no exists.");
-            return null;
-        } else if (!srcFile.isDirectory()) {
-            System.out.println("search fail: " + srcPath + " is no directory.");
-            return null;
-        }
-
-        final boolean[] flag = {false};
-        final Path[] result = {null};
-        Files.walkFileTree(Paths.get(srcPath), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (file.endsWith(fileName)) {
-                    flag[0] = true;
-                    result[0] = file;
-                    return FileVisitResult.TERMINATE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        if (!flag[0]) {
-            System.out.println("search fail: Not found " + fileName + ".");
-            return null;
-        } else {
-            System.out.println("search success: " + result[0].toAbsolutePath() + ".");
-            return result[0];
-        }
-    }
-
-    /**
-     * 监控目标路径下的文件状态.
-     *
-     * @param srcPath 目标路径
-     */
-    public static void watch(String srcPath) throws IOException, InterruptedException {
-        validateParam(srcPath);
-
-        File srcFile = new File(srcPath);
-        if (!srcFile.exists()) {
-            System.out.println("watch fail: " + srcPath + " no exists.");
-            return;
-        } else if (!srcFile.isDirectory()) {
-            System.out.println("watch fail: " + srcPath + " no directory.");
-            return;
-        }
-
-        //注册监听事件.
-        WatchService watchService = FileSystems.getDefault().newWatchService();
-        Paths.get(srcPath).register(watchService,
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_MODIFY,
-                StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.OVERFLOW);
-
-        while (watchFlag) {
-            WatchKey key = watchService.take();
-            for (WatchEvent<?> event : key.pollEvents()) {
-                System.out.println(event.context() + " is " + event.kind());
-            }
-            //重置key
-            boolean valid = key.reset();
-            if (!valid)
-                break;
-        }
-    }
-
-    /**
-     * 拷贝文件,使用了NIO实现.
-     *
-     * @param srcPath  源路径
-     * @param destPath 目标路径
-     * @param overlay  是否允许覆盖
-     * @return 成功为true, 失败为false.
-     */
-    public static boolean copyFile(String srcPath, String destPath, boolean overlay) throws IOException {
-        validateParam(srcPath, destPath);
-
-        File srcFile = new File(srcPath);
-        //判断源文件是否存在,以及是否为文件
-        if (!srcFile.exists()) {
-            System.out.println("copy file fail: " + srcPath + " is no exists.");
-            return false;
-        } else if (!srcFile.isFile()) {
-            System.out.println("copy file fail: " + srcPath + " is no file.");
-            return false;
-        }
-
-        File destFile = new File(destPath);
-        //判断目标文件是否存在,以及是否允许覆盖
-        if (destFile.exists()) {
-            //允许覆盖则直接删除目标原文件
-            if (overlay) {
-                if (!destFile.delete()) {
-                    System.out.println("copy file fail: " + destPath + " is exists.");
-                    return false;
-                }
-            } else {
-                System.out.println("copy file fail: " + destPath + " is exists.");
+    private static boolean validateString(String... param) {
+        for (String p : param) {
+            if (p == null || "".equals(p)) {
                 return false;
             }
         }
-
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        boolean flag;
-        FileChannel inChannel = null;
-        FileChannel outChannel = null;
-        try {
-            inChannel = new FileInputStream(srcFile).getChannel();
-            outChannel = new FileOutputStream(destFile).getChannel();
-            while (inChannel.read(buffer) != -1) {
-                buffer.flip(); //锁定空白区
-                outChannel.write(buffer);
-                buffer.clear(); //为下一次读写做准备.
-            }
-            flag = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            flag = false;
-        } finally {
-            if (outChannel != null) outChannel.close();
-            if (inChannel != null) inChannel.close();
-        }
-        if (!flag) {
-            System.out.println("copy file failed.");
-            return false;
-        } else {
-            System.out.println("copy file success.");
-            return true;
-        }
+        return true;
     }
 
     /**
-     * 拷贝整个文件夹以及目录下的所有文件
+     * 校验源路径文件与目标路径文件,由于文件与路径的校验方式不同,所以使用boolean isDir来设置校验方式.
      *
      * @param srcPath  源路径
      * @param destPath 目标路径
-     * @param overlay  是否覆盖
-     * @return 成功返回true, 失败返回false.
+     * @param isDir    是否为路径
+     * @param overlay  是否覆盖文件
+     * @return 成功为true, 否则false
      */
-    public static boolean copyDirs(String srcPath, String destPath, boolean overlay) throws IOException {
-        validateParam(srcPath, destPath);
-
-        File srcFile = new File(srcPath);
-        //判断源文件是否存在以及是否为一个目录
-        if (!srcFile.exists()) {
-            System.out.println("copy dirs fail: " + srcPath + " is no exists.");
-            return false;
-        } else if (!srcFile.isDirectory()) {
-            System.out.println("copy dirs fail: " + srcPath + " is no directory.");
-            return false;
-        }
-
-        File destFile = new File(destPath);
-        //判断目标文件是否存在以及是否允许覆盖
-        if (destFile.exists()) {
-            if (overlay) {
-                if (!destFile.delete()) {
-                    System.out.println("copy dirs fail: " + destPath + " is exists.");
-                    return false;
-                }
-            } else {
-                System.out.println("copy dirs fail: " + destPath + " is exists.");
+    private static boolean validateFile(String srcPath, String destPath, boolean isDir, boolean overlay) {
+        if (isDir) {
+            File srcFile = new File(srcPath);
+            if (!srcFile.exists()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName() + " validate srcFile(dir) not exists!");
                 return false;
             }
-        }
-        if (!destFile.exists()) {
-            //不存在则创建该目录
+            if (!srcFile.isDirectory()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName() + " validate srcFile(dir) is not directory!");
+                return false;
+            }
+            File destFile = new File(destPath);
+            if (destFile.exists()) {
+                //判断是否允许覆盖
+                if (overlay) {
+                    if (!destFile.delete()) {
+                        logger.debug("DEBUG: " + FileUtils.class.getName()
+                                + " validate destFile(dir) delete fail!");
+                        return false;
+                    }
+                } else {
+                    logger.debug("DEBUG: " + FileUtils.class.getName()
+                            + " validate destFile(dir) is exists(no overlay)!");
+                    return false;
+                }
+            }
+            //目标路径不存在,创建目标路径
             if (!destFile.mkdirs()) {
-                System.out.println("copy dirs fail: " + destPath + " create failed.");
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " validate destFile(dir) mkdirs fail!");
                 return false;
             }
-        }
-
-
-        //遍历源目录并根据文件和目录的类型进行递归调用
-        File[] files = srcFile.listFiles();
-        boolean flag = false;
-        for (
-                int i = 0;
-                i < files.length; i++)
-
-        {
-            if (files[i].isFile()) {
-                flag = copyFile(files[i].getAbsolutePath(), destPath + files[i].getName(), overlay);
-                if (!flag) break;
-            }
-            if (files[i].isDirectory()) {
-                flag = copyDirs(files[i].getAbsolutePath(), destPath + files[i].getName(), overlay);
-                if (!flag) break;
-            }
-        }
-
-        if (flag)
-
-        {
-            System.out.println(srcPath + " copy to " + destPath + " success!");
             return true;
-        } else
-
-        {
-            System.out.println(srcPath + " copy to " + destPath + " failed.");
-            return false;
+        } else {
+            File srcFile = new File(srcPath);
+            if (!srcFile.exists()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName() + " validate srcFile not exists!");
+                return false;
+            }
+            if (!srcFile.isFile()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName() + " validate srcFile is not file!");
+                return false;
+            }
+            File destFile = new File(destPath);
+            if (destFile.exists()) {
+                if (overlay) {
+                    if (!destFile.delete()) {
+                        logger.debug("DEBUG: " + FileUtils.class.getName()
+                                + " validate destFile delete fail!");
+                        return false;
+                    }
+                } else {
+                    logger.debug("DEBUG: " + FileUtils.class.getName()
+                            + " validate destFile is exists(no overlay)!");
+                    return false;
+                }
+            }
+            return true;
         }
-
-    }
-
-    public static void stopWatch() {
-        watchFlag = false;
     }
 }
