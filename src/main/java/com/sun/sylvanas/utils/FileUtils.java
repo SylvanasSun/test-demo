@@ -3,10 +3,15 @@ package com.sun.sylvanas.utils;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -14,10 +19,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by sylvanasp on 2016/12/23.
  */
 public class FileUtils {
-    private static Logger logger = Logger.getLogger(FileUtils.class);
+    private static final Logger logger = Logger.getLogger(FileUtils.class);
     private static boolean watchFlag = true; //监控文件标志位
-    private static ReentrantLock lock = new ReentrantLock();
-    private static ExecutorService threadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+    private static final ReentrantLock lock = new ReentrantLock();
+    private static final ExecutorService threadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
             60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()) {
         @Override
         protected void beforeExecute(Thread t, Runnable r) {
@@ -117,6 +122,178 @@ public class FileUtils {
                 }
             }
             return true;
+        }
+    }
+
+    /**
+     * 遍历目标路径并根据文件名搜索到文件.
+     *
+     * @param srcPath  目标路径
+     * @param destName 目标文件名
+     * @return 目标文件的Path对象.
+     */
+    public static Path searchFile(String srcPath, String destName) {
+        if (!validateString(srcPath, destName)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " searchFile param is null or empty!");
+            //字符串校验未通过,返回null
+            return null;
+        }
+        File srcFile = new File(srcPath);
+        //校验目标路径是否存在并且为一个路径
+        if (!srcFile.exists()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " searchFile srcFile is not exists!");
+            return null;
+        }
+        if (!srcFile.isDirectory()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " searchFile srcFile is not directory!");
+            return null;
+        }
+
+        AtomicReference<Path> result = new AtomicReference<>(null);
+        //使用FileVisitor完成对路径的遍历
+        try {
+            Files.walkFileTree(Paths.get(srcPath), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    //找到目标
+                    if (file.endsWith(destName)) {
+                        result.compareAndSet(null, file);
+                        return FileVisitResult.TERMINATE;
+                    }
+                    //没有找到目标,继续搜索
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("ERROR: " + FileUtils.class.getName()
+                    + " searchFile visitFile failed!", e);
+            return null;
+        }
+        return result.get();
+    }
+
+    /**
+     * 监控目标路径下的所有文件状态变化(开启一个守护进程).
+     *
+     * @param srcPath 目标路径
+     */
+    public static void watch(String srcPath) {
+        //校验字符串参数
+        if (!validateString(srcPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " watch param is null or empty!");
+            return;
+        }
+        File srcFile = new File(srcPath);
+        //校验源路径是否存在并且为路径
+        if (!srcFile.exists()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " watch srcFile is not exists!");
+            return;
+        }
+        if (!srcFile.isDirectory()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " watch srcFile is not directory!");
+            return;
+        }
+        //开启一条守护进程用于监控文件状态
+        threadPool.submit(new WatchDaemon(srcPath));
+    }
+
+    /**
+     * 关闭文件状态监控
+     */
+    public static void stopWatch() {
+        FileUtils.lock.tryLock();
+        try {
+            FileUtils.watchFlag = false;
+            logger.info("<INFO> WatchFileState stop!");
+        } finally {
+            FileUtils.lock.unlock();
+        }
+    }
+
+    /**
+     * 监控文件状态的守护进程
+     */
+    private static class WatchDaemon implements Runnable {
+        private final String srcPath;
+
+        private WatchDaemon(String srcPath) {
+            this.srcPath = srcPath;
+        }
+
+        @Override
+        public void run() {
+            Random random = new Random();
+            //将本线程更改为守护进程
+            Thread.currentThread().setDaemon(true);
+            Thread.currentThread().setName("WatchFileStatusThread-" + random.nextInt(101) + "(daemon)");
+            //获得WatchServer
+            WatchService watchService = null;
+            try {
+                watchService = FileSystems.getDefault().newWatchService();
+                //注册监听事件
+                Paths.get(srcPath).register(watchService,
+                        StandardWatchEventKinds.OVERFLOW,
+                        StandardWatchEventKinds.ENTRY_DELETE,
+                        StandardWatchEventKinds.ENTRY_MODIFY,
+                        StandardWatchEventKinds.ENTRY_CREATE);
+
+                while (watchFlag) {
+                    //遍历watchService的key
+                    WatchKey watchKey = null;
+                    try {
+                        watchKey = watchService.take();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        logger.error("ERROR: " + FileUtils.class.getName()
+                                + " WatchThread caught InterruptedException!", e);
+                    }
+                    if (watchKey != null) {
+                        for (WatchEvent<?> event : watchKey.pollEvents()) {
+                            logger.info("<INFO> WatchThread: " + event.context() + " is " + event.kind());
+                        }
+                        //重置key
+                        boolean valid = watchKey.reset();
+                        if (!valid) break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " WatchThread caught IOException!", e);
+            }
+        }
+    }
+
+    /**
+     * 关闭线程池(正在进行的任务会进行到结束才关闭)
+     */
+    public static void shutdown() {
+        FileUtils.lock.tryLock();
+        try {
+            FileUtils.threadPool.shutdown();
+            logger.info("<INFO> " + FileUtils.class.getName() + " ThreadPool shutdown!");
+        } finally {
+            FileUtils.lock.unlock();
+        }
+    }
+
+    /**
+     * 关闭线程池(立即停止所有任务)
+     */
+    public static void shutdownNow() {
+        FileUtils.lock.tryLock();
+        try {
+            FileUtils.threadPool.shutdownNow();
+            logger.info("<INFO> " + FileUtils.class.getName() + " ThreadPool shutdownNow!");
+        } finally {
+            FileUtils.lock.unlock();
         }
     }
 }

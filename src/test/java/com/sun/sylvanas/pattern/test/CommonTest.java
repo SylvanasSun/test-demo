@@ -6,6 +6,7 @@ import org.junit.Test;
 import javax.sql.RowSet;
 import java.io.FileNotFoundException;
 import java.sql.*;
+import java.util.Random;
 
 /**
  * Created by sylvanasp on 2016/12/30.
@@ -47,5 +48,13 @@ public class CommonTest {
         }
         test_student.close();
         connection.close();
+    }
+
+    @Test
+    public void test03() {
+        Random random = new Random();
+        for (int i = 0; i < 100; i++) {
+            System.out.println(random.nextInt(101));
+        }
     }
 }
