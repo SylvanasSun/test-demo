@@ -3,14 +3,15 @@ package com.sun.sylvanas.utils;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -205,6 +206,79 @@ public class FileUtils {
     }
 
     /**
+     * 使用NIO拷贝文件.
+     *
+     * @param srcPath  源文件路径
+     * @param destPath 目标文件路径
+     * @param overlay  是否覆盖
+     * @return 返回boolean.
+     */
+    public static boolean copyFile(String srcPath, String destPath, boolean overlay) {
+        if (!validateString(srcPath, destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " copyFile param is null or empty!");
+            return false;
+        }
+        //校验文件
+        if (!validateFile(srcPath, destPath, false, overlay)) {
+            return false;
+        }
+        //开启一条线程执行IO操作
+        Future<Boolean> future = threadPool.submit(new CopyFileThread(srcPath, destPath));
+        try {
+            return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            logger.error("ERROR: " + FileUtils.class.getName()
+                    + " copyFile future get result fail!", e);
+        }
+        return false;
+    }
+
+    /**
+     * 拷贝路径(包括所有的子文件)
+     *
+     * @param srcPath  源路径
+     * @param destPath 目标路径
+     * @param overlay  是否覆盖
+     * @return 返回boolean.
+     */
+    public static boolean copyDir(String srcPath, String destPath, boolean overlay) {
+        if (!validateString(srcPath, destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " copyDir param is null or empty!");
+            return false;
+        }
+        //校验文件有效性
+        if (!validateFile(srcPath, destPath, true, overlay)) {
+            return false;
+        }
+        //判断目标路径是否以 "\" 结尾.
+        if (!destPath.endsWith("\\") || !destPath.endsWith("/")) {
+            destPath = destPath + "/";
+        }
+        //获得源路径的文件集合
+        File[] listFiles = new File(srcPath).listFiles();
+        boolean flag = false;
+        if (listFiles != null) {
+            //遍历文件集合
+            for (File file : listFiles) {
+                //是文件,调用copyFile
+                if (file.isFile()) {
+                    flag = FileUtils.copyFile(file.getAbsolutePath(), destPath + file.getName(), overlay);
+                    if (!flag) break;
+                }
+                //是文件夹,递归调用
+                if (file.isDirectory()) {
+                    flag = FileUtils.copyDir(file.getAbsolutePath(), destPath + file.getName(), overlay);
+                    if (!flag) break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    /**
      * 关闭文件状态监控
      */
     public static void stopWatch() {
@@ -214,6 +288,42 @@ public class FileUtils {
             logger.info("<INFO> WatchFileState stop!");
         } finally {
             FileUtils.lock.unlock();
+        }
+    }
+
+    /**
+     * 拷贝文件线程
+     */
+    private static class CopyFileThread implements Callable<Boolean> {
+        private String srcPath;
+        private String destPath;
+
+        private CopyFileThread(String srcPath, String destPath) {
+            this.srcPath = srcPath;
+            this.destPath = destPath;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            FileUtils.lock.tryLock();
+            Thread.currentThread().setName("CopyFileThread-" + new Random().nextInt(101));
+            try {
+                FileChannel inChannel = new FileInputStream(new File(srcPath)).getChannel();
+                FileChannel outChannel = new FileOutputStream(new File(destPath)).getChannel();
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+                //执行文件拷贝
+                while (inChannel.read(buffer) > 0) {
+                    buffer.flip();
+                    outChannel.write(buffer);
+                    buffer.clear();
+                }
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " copy file " + srcPath + " to " + destPath + " success!");
+                return true;
+            } finally {
+                FileUtils.lock.unlock();
+            }
         }
     }
 
