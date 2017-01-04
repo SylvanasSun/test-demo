@@ -2,10 +2,7 @@ package com.sun.sylvanas.utils;
 
 import org.apache.log4j.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
@@ -279,6 +276,61 @@ public class FileUtils {
     }
 
     /**
+     * 向目标文件末尾处追加源文件的内容,如果目标文件不存在,则copyFile
+     *
+     * @param srcPath  源文件
+     * @param destPath 目标文件
+     * @return 返回boolean.
+     */
+    public static boolean appendFile(String srcPath, String destPath) {
+        if (!validateString(srcPath, destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendFile param is null or empty!");
+            return false;
+        }
+        File srcFile = new File(srcPath);
+        //判断源文件是否存在并且为文件
+        if (!srcFile.exists()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendFile srcFile is not exists!");
+            return false;
+        }
+        if (!srcFile.isFile()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendFile srcFile is not file!");
+            return false;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在
+        if (!destFile.exists()) {
+            //不存在则copyFile
+            return FileUtils.copyFile(srcPath, destPath, false);
+        } else {
+            //开启一条线程执行追加文件
+            Future<Boolean> future = threadPool.submit(new AppendFileThread(srcPath, destPath));
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " appendFile future get result fail!", e);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 追加内容到目标文件,如果目标文件不存在,则生成文件.
+     *
+     * @param destPath 目标文件路径
+     * @param bytes    内容字节
+     * @return 返回boolean
+     */
+    public static boolean appendContentTo(String destPath, byte[] bytes) {
+        return false;
+    }
+
+    /**
      * 关闭文件状态监控
      */
     public static void stopWatch() {
@@ -288,6 +340,119 @@ public class FileUtils {
             logger.info("<INFO> WatchFileState stop!");
         } finally {
             FileUtils.lock.unlock();
+        }
+    }
+
+
+    /**
+     * 生成一个指定内容的文件
+     *
+     * @param destPath 目标文件路径
+     * @param bytes    内容字节
+     * @param overlay  是否覆盖文件
+     * @return 返回boolean
+     */
+    public static boolean createFile(String destPath, byte[] bytes, boolean overlay) {
+        if (!validateString(destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " createFile param is null or empty!");
+            return false;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在
+        if (destFile.exists()) {
+            if (overlay) {
+                if (!destFile.delete()) {
+                    logger.debug("DEBUG: " + FileUtils.class.getName()
+                            + " createFile destFile overlay fail!");
+                    return false;
+                }
+            } else {
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " createFile destFile is exitis!");
+                return false;
+            }
+        }
+        //判断字节数组是否为空,如果为空则生成一个空文件
+        if (bytes == null || bytes.length <= 0) {
+            try {
+                return destFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " createFile caught IOException!", e);
+            }
+        }
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = new FileOutputStream(destFile);
+            //创建目标文件
+            if (!destFile.createNewFile()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " createFile destFile create fail!");
+                return false;
+            }
+            //向目标文件输出内容
+            outputStream.write(bytes != null ? bytes : new byte[0]);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("ERROR: " + FileUtils.class.getName()
+                    + " createFile caught IOException!", e);
+        } finally {
+            try {
+                if (outputStream != null) outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " createFile close resource fail!", e);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 追加文件内容线程
+     */
+    private static class AppendFileThread implements Callable<Boolean> {
+        private String srcPath;
+        private String destPath;
+
+        private AppendFileThread(String srcPath, String destPath) {
+            this.srcPath = srcPath;
+            this.destPath = destPath;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            FileUtils.lock.tryLock();
+            Thread.currentThread().setName("AppendFileThread-" + new Random().nextInt(101));
+            FileChannel channel = null;
+            FileInputStream srcIn = null;
+            try {
+                channel = new RandomAccessFile(destPath, "rw").getChannel();
+                srcIn = new FileInputStream(srcPath);
+                //将目标文件的指针设置到最后
+                channel.position(new File(destPath).length());
+                //读取源文件的内容并追加到目标文件
+                int len = 0;
+                byte[] buf = new byte[1024];
+                while ((len = srcIn.read(buf, 0, buf.length)) != -1) {
+                    channel.write(ByteBuffer.wrap(buf));
+                }
+                logger.debug("DEBUG: " + Thread.currentThread().getName()
+                        + " append file " + srcPath + " to " + destPath + " success!");
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " AppendFileThread caught IOException!", e);
+            } finally {
+                if (channel != null) channel.close();
+                if (srcIn != null) srcIn.close();
+                FileUtils.lock.unlock();
+            }
+            return false;
         }
     }
 
@@ -307,9 +472,11 @@ public class FileUtils {
         public Boolean call() throws Exception {
             FileUtils.lock.tryLock();
             Thread.currentThread().setName("CopyFileThread-" + new Random().nextInt(101));
+            FileChannel inChannel = null;
+            FileChannel outChannel = null;
             try {
-                FileChannel inChannel = new FileInputStream(new File(srcPath)).getChannel();
-                FileChannel outChannel = new FileOutputStream(new File(destPath)).getChannel();
+                inChannel = new FileInputStream(new File(srcPath)).getChannel();
+                outChannel = new FileOutputStream(new File(destPath)).getChannel();
                 ByteBuffer buffer = ByteBuffer.allocate(1024);
 
                 //执行文件拷贝
@@ -321,9 +488,18 @@ public class FileUtils {
                 logger.debug("DEBUG: " + FileUtils.class.getName()
                         + " copy file " + srcPath + " to " + destPath + " success!");
                 return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " CopyFileThread caught IOException!", e);
             } finally {
+                if (outChannel != null)
+                    outChannel.close();
+                if (inChannel != null)
+                    inChannel.close();
                 FileUtils.lock.unlock();
             }
+            return false;
         }
     }
 
