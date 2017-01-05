@@ -327,7 +327,326 @@ public class FileUtils {
      * @return 返回boolean
      */
     public static boolean appendContentTo(String destPath, byte[] bytes) {
+        if (!validateString(destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendContentTo param is null or empty!");
+            return false;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在,如果不存在则生成文件
+        if (!destFile.exists()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendContentTo destFile is not exists,execute createFile!");
+            return FileUtils.createFile(destPath, bytes, false);
+        }
+        if (!destFile.isFile()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendContentTo destFile is not file!");
+            return false;
+        }
+        //开启追加内容到文件线程
+        Future<Boolean> future = threadPool.submit(new AppendContentToThread(destFile, bytes));
+
+        try {
+            return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            logger.error("ERROR: " + FileUtils.class.getName()
+                    + " appendContentTo future get result fail!", e);
+        }
         return false;
+    }
+
+    /**
+     * 追加字符串内容到目标文件,如果目标文件不存在,则生成文件.
+     *
+     * @param destPath 目标文件路径
+     * @param content  字符串内容
+     * @return 返回boolean
+     */
+    public static boolean appendContentTo(String destPath, String content) {
+        if (!validateString(destPath, content)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " appendContentTo param is null or empty!");
+            return false;
+        }
+        return FileUtils.appendContentTo(destPath, content.getBytes());
+    }
+
+    /**
+     * 追加内容到文件的线程
+     */
+    private static class AppendContentToThread implements Callable<Boolean> {
+        private File destFile = null;
+        private byte[] bytes = null;
+
+        private AppendContentToThread(File destFile, byte[] bytes) {
+            this.destFile = destFile;
+            this.bytes = bytes;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            FileUtils.lock.tryLock();
+            Thread.currentThread().setName("AppendContentToThread-" + new Random().nextInt(101));
+            try (FileChannel channel = new FileOutputStream(destFile).getChannel();) {
+                //将指针指向最后
+                channel.position(destFile.length());
+                //写入追加内容
+                int len = channel.write(ByteBuffer.wrap(bytes));
+                if (len > 0) {
+                    return true;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName() +
+                        " " + Thread.currentThread().getName() + " caught IOException!", e);
+            } finally {
+                FileUtils.lock.unlock();
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 向目标文件(指定指针处)插入源文件的内容,如果目标文件不存在,则执行CopyFile
+     *
+     * @param srcPath  源文件路径
+     * @param destPath 目标文件路径
+     * @param tempPath 临时文件路径
+     * @param point    文件指针
+     * @return 返回boolean
+     */
+    public static boolean insertFile(String srcPath, String destPath, String tempPath, int point) throws ExecutionException {
+        if (!validateString(srcPath, destPath, tempPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " insertFile param is null or empty!");
+            return false;
+        }
+        File srcFile = new File(srcPath);
+        //判断源文件是否存在,并且为一个文件
+        if (!srcFile.exists() || !srcFile.isFile()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " insertFile srcFile is not exists or is not file!");
+            return false;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在,如果不存在则copyFile
+        if (!destFile.exists()) {
+            return FileUtils.copyFile(srcPath, destPath, false);
+        } else {
+            File tempFile = new File(tempPath);
+            //判断临时文件是否存在,如果存在则返回false
+            if (tempFile.exists()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " insertFile tempFile is exists!");
+                return false;
+            }
+            Future<Boolean> future = threadPool.submit(new InsertFileThread(srcFile, destFile, tempFile, point));
+            try {
+                return future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " insertFile future get result fail!", e);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 插入文件线程,使用将后续(被覆盖)的内容写入临时文件,最后再从临时文件写入丢失的后续内容的策略.
+     */
+    private static class InsertFileThread implements Callable<Boolean> {
+        private File srcFile = null;
+        private File destFile = null;
+        private File tempFile = null;
+        private int point = 0;
+
+        private InsertFileThread(File srcFile, File destFile, File tempFile, int point) {
+            this.srcFile = srcFile;
+            this.destFile = destFile;
+            this.tempFile = tempFile;
+            this.point = point;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            FileUtils.lock.tryLock();
+            Thread.currentThread().setName("InsertFileThread-" + new Random().nextInt(101));
+            FileChannel tempChannel = null;
+            try (FileChannel srcChannel = new RandomAccessFile(srcFile, "rw").getChannel();
+                 FileChannel destChannel = new RandomAccessFile(destFile, "rw").getChannel()) {
+                //创建临时文件
+                if (!tempFile.createNewFile()) {
+                    logger.debug("DEBUG: " + FileUtils.class.getName() +
+                            " " + Thread.currentThread().getName() + " tempFile create fail!");
+                    return false;
+                }
+                tempChannel = new FileOutputStream(tempFile).getChannel();
+                //将指针设置到insert位置
+                destChannel.position(point);
+                //将会被覆盖的内容存入临时文件
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                while ((destChannel.read(buffer)) != -1) {
+                    buffer.flip();
+                    tempChannel.write(buffer);
+                    buffer.clear();
+                }
+                //将指针重新设置回insert位置
+                destChannel.position(point);
+                //追加源文件的内容
+                while ((srcChannel.read(buffer)) != -1) {
+                    buffer.flip();
+                    destChannel.write(buffer);
+                    buffer.clear();
+                }
+                //追加临时文件里暂存的内容
+                while ((tempChannel.read(buffer)) != -1) {
+                    buffer.flip();
+                    destChannel.write(buffer);
+                    buffer.clear();
+                }
+                logger.debug("DEBUG: " + Thread.currentThread().getName() +
+                        " insert " + srcFile.getName() + " to " + destFile.getName() + " success!");
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName() +
+                        " " + Thread.currentThread().getName() + " caught IOException!", e);
+            } finally {
+                if (tempChannel != null) tempChannel.close();
+                tempFile.delete(); //删除临时文件
+                FileUtils.lock.unlock();
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 向目标文件(指定指针处)插入内容,如果目标文件不存在,则生成指定内容的文件
+     *
+     * @param destPath 目标文件路径
+     * @param tempPath 临时文件路径
+     * @param bytes    内容
+     * @param point    指针
+     * @return 返回boolean
+     */
+    public static boolean insertContentTo(String destPath, String tempPath, byte[] bytes, int point) {
+        if (!validateString(destPath, tempPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " insertContentTo param is null or empty!");
+            return false;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在,如果不存在则生成指定内容的文件
+        if (!destFile.exists()) {
+            return FileUtils.createFile(destPath, bytes, false);
+        } else {
+            File tempFile = new File(tempPath);
+            //判断临时文件是否存在
+            if (tempFile.exists()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " insertContentTo tempFile is exists!");
+                return false;
+            }
+            //创建临时文件
+            try {
+                if (!tempFile.createNewFile()) {
+                    logger.debug("DEBUG: " + FileUtils.class.getName()
+                            + " insertContentTo tempFile create fail!");
+                    return false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Future<Boolean> future = threadPool.submit(new InsertContentToThread(destFile, tempFile, bytes, point));
+            //删除临时文件
+            if (!tempFile.delete()) {
+                logger.debug("DEBUG: " + FileUtils.class.getName()
+                        + " insertContentTo tempFile delete fail!");
+            }
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + FileUtils.class.getName()
+                        + " insertContentTo future get result fail!", e);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 向目标文件(指定指针处)插入字符串内容,如果目标文件不存在,则生成指定内容的文件
+     *
+     * @param destPath 目标文件路径
+     * @param tempPath 临时文件路径
+     * @param content  字符串内容
+     * @param point    指针
+     * @return 返回boolean
+     */
+    public static boolean insertContentTo(String destPath, String tempPath, String content, int point) {
+        if (!validateString(destPath, tempPath, content)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " insertContentTo param is null or empty!");
+            return false;
+        }
+        return FileUtils.insertContentTo(destPath, tempPath, content.getBytes(), point);
+    }
+
+    private static class InsertContentToThread implements Callable<Boolean> {
+        private File destFile = null;
+        private File tempFile = null;
+        private byte[] bytes = null;
+        private int point = 0;
+
+        private InsertContentToThread(File destFile, File tempFile, byte[] bytes, int point) {
+            this.destFile = destFile;
+            this.tempFile = tempFile;
+            this.bytes = bytes;
+            this.point = point;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            FileUtils.lock.tryLock();
+            Thread.currentThread().setName("InsertContentToThread-" + new Random().nextInt(101));
+            try (FileChannel destChannel = new RandomAccessFile(destFile, "rw").getChannel();
+                 FileChannel tempChannel = new RandomAccessFile(tempFile, "rw").getChannel()) {
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                //将指针设置到指定位置
+                destChannel.position(point);
+                //将要被覆盖的内容写入临时文件
+                while ((destChannel.read(buffer)) != -1) {
+                    buffer.flip();
+                    tempChannel.write(buffer);
+                    buffer.clear();
+                }
+                //将指针重新设置回指定位置
+                destChannel.position(point);
+                //写入追加内容
+                int len = destChannel.write(ByteBuffer.wrap(bytes));
+                if (len < 0) {
+                    //写入失败
+                    return false;
+                }
+                //将临时文件寄存的内容重新写回
+                while ((tempChannel.read(buffer)) != -1) {
+                    buffer.flip();
+                    destChannel.write(buffer);
+                    buffer.clear();
+                }
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("ERROR: " + Thread.currentThread().getName()
+                        + " caught IOException!", e);
+            } finally {
+                FileUtils.lock.unlock();
+            }
+            return false;
+        }
     }
 
     /**
@@ -409,6 +728,56 @@ public class FileUtils {
             }
         }
         return false;
+    }
+
+    /**
+     * 生成一个指定字符串内容的文件
+     *
+     * @param destPath 目标文件路径
+     * @param content  字符串内容
+     * @param overlay  是否覆盖文件
+     * @return 返回boolean
+     */
+    public static boolean createFile(String destPath, String content, boolean overlay) {
+        return FileUtils.createFile(destPath, content.getBytes(), overlay);
+    }
+
+    /**
+     * 读取目标文件的字节内容并返回
+     *
+     * @param destPath 目标文件路径
+     * @return 字节内容
+     */
+    public static byte[] readFile(String destPath) {
+        if (!validateString(destPath)) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " readFile param is null or empty!");
+            return null;
+        }
+        File destFile = new File(destPath);
+        //判断目标文件是否存在并且为一个文件
+        if (!destFile.exists() || !destFile.isFile()) {
+            logger.debug("DEBUG: " + FileUtils.class.getName()
+                    + " readFile destFile is not exists or is not file!");
+            return null;
+        }
+        //读取文件内容
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        try (FileChannel channel = new FileInputStream(destFile).getChannel()) {
+            int len = channel.read(buffer);
+            buffer.flip();
+            byte[] result = null;
+            if (len > 0) {
+                result = buffer.array();
+            }
+            buffer.clear();
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("ERROR: " + FileUtils.class.getName()
+                    + " readFile caught IOException!", e);
+        }
+        return null;
     }
 
     /**

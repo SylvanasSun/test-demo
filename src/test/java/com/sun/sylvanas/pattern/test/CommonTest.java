@@ -5,7 +5,9 @@ import org.junit.Test;
 
 import javax.sql.RowSet;
 import java.io.FileNotFoundException;
+import java.nio.ByteBuffer;
 import java.sql.*;
+import java.util.Arrays;
 
 /**
  * Created by sylvanasp on 2016/12/30.
@@ -55,5 +57,19 @@ public class CommonTest {
         String s = msg.substring(2);
         String result = "%" + s.split(":")[0] + "-" + s.split(":")[1] + "%";
         System.out.println(result);
+    }
+
+    @Test
+    public void test04() {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        buffer.put("Hello,World".getBytes());
+        buffer.put("Java".getBytes());
+        buffer.flip();
+        System.out.println(Arrays.toString(buffer.array()));
+        buffer.clear();
+        System.out.println(Arrays.toString(buffer.array()));
+        buffer.put("Sylvanas".getBytes());
+        buffer.clear();
+        System.out.println(Arrays.toString(buffer.array()));
     }
 }
