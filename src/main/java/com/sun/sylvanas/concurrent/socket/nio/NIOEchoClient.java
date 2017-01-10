@@ -20,6 +20,7 @@ public class NIOEchoClient {
     private final static int PORT = 8000;
     private final static String HOST = "localhost";
 
+    @SuppressWarnings("Duplicates")
     private void init() {
         System.out.println("SocketChannel and Selector Initialization.");
         try {
