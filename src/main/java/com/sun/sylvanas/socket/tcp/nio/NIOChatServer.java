@@ -79,6 +79,7 @@ public class NIOChatServer {
                         long end = System.currentTimeMillis();
                         Long start = SPEND_STATUS.get(((SocketChannel) sk.channel()).socket());
                         System.out.println("SPEND: " + (end - start) + "ms");
+                        SPEND_STATUS.remove(((SocketChannel) sk.channel()).socket());
                     }
                 }
             }
