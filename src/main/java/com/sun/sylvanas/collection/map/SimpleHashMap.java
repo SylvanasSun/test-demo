@@ -204,7 +204,7 @@ public class SimpleHashMap<K, V> extends AbstractMap<K, V>
     }
 
     /**
-     * 添加一个新的桶来保存该key和value
+     * 添加一对key-value,如果当前索引上已有桶(发生hash碰撞),则将新元素放入链表头
      */
     void addEntry(int hash, K key, V value, int bucketIndex) {
         //保存对应table的值
@@ -214,6 +214,40 @@ public class SimpleHashMap<K, V> extends AbstractMap<K, V>
         //如果HashMap中元素的个数已经超过阈值,则扩容两倍
         if (size++ >= threshold)
             resize(2 * table.length);
+    }
+
+    /**
+     * 根据key删除bucket
+     */
+    final Node<K, V> removeEntryForKey(Object key) {
+        int hash = (key == null) ? 0 : hash(key.hashCode());
+        int i = indexFor(hash, table.length);
+        //找到对应的桶
+        Node<K, V> prev = table[i];
+        Node<K, V> e = prev;
+
+        //遍历链表
+        while (e != null) {
+            Node<K, V> next = e.next;
+            Object k;
+            //如果找到对应的桶
+            if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k)))) {
+                modCount++;
+                size--; //size - 1
+                //如果第一个就是需要删除的元素
+                if (prev == e) {
+                    table[i] = next; //则table[i]指向下一个桶
+                } else {
+                    prev.next = next; //否则上一个桶的next等于下一个桶
+                }
+                return e;
+            }
+            prev = e;
+            e = next;
+        }
+
+        return e;
     }
 
     /**
@@ -313,9 +347,9 @@ public class SimpleHashMap<K, V> extends AbstractMap<K, V>
         return null;
     }
 
-    @Override
-    public V remove(Object key) {
-        return null;
+    public V remove(Object k) {
+        Node<K, V> e = removeEntryForKey(k);
+        return (e == null) ? null : e.value;
     }
 
     @Override
