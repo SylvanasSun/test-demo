@@ -1,15 +1,12 @@
-/test/
-# Maven #
-target/
-
-# IDEA #
-.idea/
+/target
+/.idea
 *.iml
-
-# Eclipse #
-.settings/
-.classpath
-.project
-
-# jrebel #
-src/main/resources/rebel.xml
+*.ipr
+*.iws
+.idea
+*/*.log
+*/target/
+*.DS_Store
+*.classpath
+*.settings
+*.project
