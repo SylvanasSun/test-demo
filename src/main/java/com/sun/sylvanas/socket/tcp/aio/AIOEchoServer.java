@@ -89,4 +89,8 @@ public class AIOEchoServer {
             System.out.println("Accept fail: " + exc);
         }
     }
+
+    public static void main(String[] args) {
+        new AIOEchoServer().start();
+    }
 }

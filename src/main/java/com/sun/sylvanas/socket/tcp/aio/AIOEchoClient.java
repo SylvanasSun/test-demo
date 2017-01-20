@@ -61,4 +61,8 @@ public class AIOEchoClient {
         //向服务端发送消息
         client.write(ByteBuffer.wrap("What's your name?".getBytes())).get();
     }
+
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        new AIOEchoClient().start();
+    }
 }
