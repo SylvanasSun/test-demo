@@ -1,7 +1,6 @@
 package com.sun.sylvanas.utils;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import jdk.nashorn.internal.scripts.JD;
 import org.apache.log4j.Logger;
 
 import javax.sql.RowSet;
