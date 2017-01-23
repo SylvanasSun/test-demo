@@ -9,6 +9,7 @@ import javax.sql.rowset.RowSetProvider;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.Properties;
@@ -305,6 +306,67 @@ public class JDBCUtils {
             }
         }
         return null;
+    }
+
+
+    /**
+     * 根据传入的对象和参数来自动生成一条insert语句,需要对象的类名与属性名与表一致.
+     *
+     * @param clazz 传入的对象
+     * @param param insert参数
+     */
+    public static int insert(Class clazz, Object... param) {
+        if (param == null || param.length == 0) return -1;
+        if (clazz == null) return -1;
+
+        StringBuilder sb = new StringBuilder();
+        //拼接sql语句
+        sb.append("insert into ").append(clazz.getName()).append(" (");
+        Field[] fields = clazz.getDeclaredFields();
+        if (fields == null || fields.length == 0) return -1;
+
+        for (int i = 0; i < fields.length; i++) {
+            fields[i].setAccessible(true);
+            if (i != fields.length - 1) {
+                sb.append(fields[i].getName()).append(",");
+            } else {
+                sb.append(fields[i].getName()).append(") values(");
+            }
+        }
+        int fieldsLen = fields.length;
+        if (param.length != fieldsLen) return -1; //如果传入参数个数与传入的对象属性数不一致则return-1
+        for (int i = 0; i < fieldsLen; i++) {
+            if (i != fieldsLen - 1) {
+                sb.append("?,");
+            } else {
+                sb.append("?)");
+            }
+        }
+
+        try {
+            connection = dataSource.getConnection();
+            connection.setAutoCommit(false);
+            statement = connection.prepareStatement(sb.toString());
+            int result = -1;
+            try {
+                result = statement.executeUpdate();
+            } catch (Exception e) {
+                connection.rollback();
+            }
+            connection.commit();
+            return result;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            logger.error("Error: " + JDBCUtils.class.getName() + " insert method fail.", e);
+        } finally {
+            try {
+                if (statement != null) statement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return -1;
     }
 
     /**
