@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * Created by sylvanasp on 2016/12/30.
  */
-public class JDBCUtils {
+public final class JDBCUtils {
     private final static Properties properties;
     private final static Logger logger;
     private final static String DRIVER;
@@ -31,6 +31,10 @@ public class JDBCUtils {
     private static Connection connection = null;
     private static PreparedStatement statement = null;
     private static ResultSet resultSet = null;
+
+    private JDBCUtils() {
+    }
+
 
     /**
      * 初始化成员变量
