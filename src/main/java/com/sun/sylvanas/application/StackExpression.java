@@ -6,7 +6,6 @@ import com.sun.sylvanas.pattern.adapter.TokenStreamAdapter;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Iterator;
 
 /**
  * 使用Stack来实现表达式求值.
