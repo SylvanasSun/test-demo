@@ -41,6 +41,10 @@ public class TokenStreamAdapter implements TokenStream {
     public Token getToken() throws IOException {
         // 判断当前指针指向的Token类型并创建返回Token
         char c = chars[point];
+        if (c == ' ') {
+            this.consumeToken();
+            return getToken();
+        }
         if (c == '+') {
             return new Token(Token.TokenType.PLUS, c);
         } else if (c == '-') {
