@@ -86,7 +86,7 @@ public class StackExpression {
         // 当遇见括号时:
         // 将左括号表示为一个无穷大的操作符(括号内的操作符都将先入栈);
         // 右括号则为无穷小的操作符(将操作数出栈并开始进行计算)
-        if (left == Token.TokenType.LPAR || right == Token.TokenType.LPAR) {
+        if (right == Token.TokenType.LPAR) {
             return -1;
         } else if (right == Token.TokenType.RPAR) {
             return 1;
