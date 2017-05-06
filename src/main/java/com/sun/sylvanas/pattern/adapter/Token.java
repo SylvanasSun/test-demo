@@ -5,7 +5,12 @@ package com.sun.sylvanas.pattern.adapter;
  * <p>
  * Created by SylvanasSun on 2017/4/23.
  */
-public class Token {
+public class Token implements Comparable<Token> {
+
+    @Override
+    public int compareTo(Token o) {
+        return 0;
+    }
 
     public enum TokenType {
         LPAR, //左括号
@@ -24,6 +29,14 @@ public class Token {
     public Token(TokenType tokenType, Object value) {
         this.tokenType = tokenType;
         this.value = value;
+    }
+
+    public String stringValue() {
+        return String.valueOf(value);
+    }
+
+    public Integer intValue() {
+        return Integer.valueOf(stringValue());
     }
 
 }
