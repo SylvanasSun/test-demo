@@ -11,6 +11,9 @@ public class HeapSort {
 
     private static boolean priorityQueueFlag = false; // 是否使用优先队列
 
+    private HeapSort() {
+    }
+
     public static void sort(Comparable[] a) {
         if (!priorityQueueFlag) {
             maxHeapSort(a);
