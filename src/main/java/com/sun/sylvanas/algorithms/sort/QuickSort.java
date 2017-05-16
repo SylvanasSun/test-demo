@@ -82,7 +82,7 @@ public class QuickSort {
     }
 
     public static void main(String[] args) {
-        Integer[] a = {8,11,20,9,6,4,1,30,64,99,100,7};
+        Integer[] a = {8, 11, 20, 9, 6, 4, 1, 30, 64, 99, 100, 7};
         QuickSort.sort(a);
         for (int i = 0; i < a.length; i++) {
             System.out.print(a[i] + " ");
