@@ -7,7 +7,7 @@ import java.util.Scanner;
 /**
  * Created by SylvanasSun on 2017/5/14.
  */
-public class HeapSort {
+public class HeapSort extends BaseSort {
 
     private static boolean priorityQueueFlag = false; // 是否使用优先队列
 
@@ -32,13 +32,6 @@ public class HeapSort {
             // 堆减少,并调整新的堆
             maxHeap.heapify(a, i, 0);
         }
-    }
-
-    public static void print(Object[] a) {
-        for (int i = 0; i < a.length; i++) {
-            System.out.print(a[i] + " ");
-        }
-        System.out.println();
     }
 
     public static void main(String[] args) {

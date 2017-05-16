@@ -3,7 +3,7 @@ package com.sun.sylvanas.algorithms.sort;
 /**
  * Created by SylvanasSun on 2017/5/16.
  */
-public class MergeSort {
+public class MergeSort extends BaseSort {
 
     private MergeSort() {
     }
@@ -90,17 +90,6 @@ public class MergeSort {
         for (int k = lo; k <= hi; k++) {
             a[k] = aux[k];
         }
-    }
-
-    // a < b ?
-    private static boolean less(Comparable a, Comparable b) {
-        return a.compareTo(b) < 0;
-    }
-
-    private static void swap(Object[] a, int i, int j) {
-        Object t = a[i];
-        a[i] = a[j];
-        a[j] = t;
     }
 
     public static void main(String[] args) {

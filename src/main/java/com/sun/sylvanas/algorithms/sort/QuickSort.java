@@ -3,7 +3,7 @@ package com.sun.sylvanas.algorithms.sort;
 /**
  * Created by SylvanasSun on 2017/5/15.
  */
-public class QuickSort {
+public class QuickSort extends BaseSort {
 
     private QuickSort() {
     }
@@ -68,17 +68,6 @@ public class QuickSort {
         int pivotLocation = i + 1;
         swap(a, pivotLocation, end);
         return pivotLocation;
-    }
-
-    // a < b ?
-    private static boolean less(Comparable a, Comparable b) {
-        return a.compareTo(b) < 0;
-    }
-
-    private static void swap(Object[] a, int i, int j) {
-        Object t = a[i];
-        a[i] = a[j];
-        a[j] = t;
     }
 
     public static void main(String[] args) {
