@@ -83,6 +83,35 @@ public class BinaryTree<K extends Comparable<K>, V> implements Serializable, Ite
         return get(key) != null;
     }
 
+    protected void removeSingleNode(Node<K, V> x, Node<K, V> successor) {
+        if (successor != null) {
+            Node<K, V> xParent = x.getParent();
+            successor.setParent(xParent);
+            if (xParent == null)
+                root = successor;
+            else {
+                if (x == xParent.getLeft())
+                    xParent.setLeft(successor);
+                else
+                    xParent.setRight(successor);
+                xParent.setSize(xParent.getLeft().getSize() + xParent.getRight().getSize() + 1);
+            }
+            x.setLeft(null);
+            x.setRight(null);
+            x.setParent(null);
+        } else if (x.getParent() == null) {
+            root = null;
+        } else {
+            Node<K, V> parent = x.getParent();
+            if (x == parent.getLeft())
+                parent.setLeft(null);
+            else
+                parent.setRight(null);
+            parent.setSize(parent.getLeft().getSize() + parent.getRight().getSize() + 1);
+            x.setParent(null);
+        }
+    }
+
     /**
      * Returns the successor of the node x or null if no such.
      * successor is the right subtree the leftmost node.
