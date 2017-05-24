@@ -2,6 +2,7 @@ package com.sun.sylvanas.data_struct.tree;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * The {@code BinaryTree} class represents an ordered symbol table of generic
@@ -69,6 +70,97 @@ public class BinaryTree<K extends Comparable<K>, V> implements Serializable, Ite
                 return x.getValue();
         }
         return null;
+    }
+
+    /**
+     * Inserts the specified key-value pair into the symbol table, overwriting the old
+     * value with the new value if the symbol table already contains the specified key.
+     * Deletes the specified key (and its associated value) from this symbol table
+     * if the specified value is {@code null}.
+     *
+     * @param key   the key
+     * @param value the value
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     */
+    public void put(K key, V value) {
+        if (key == null)
+            throw new IllegalArgumentException();
+        if (value == null) {
+            remove(key);
+            return;
+        }
+
+        put(root, key, value);
+    }
+
+    protected void put(Node<K, V> x, K key, V value) {
+        Node<K, V> t = null;
+        int cmp = 0;
+        while (x != null) {
+            t = x;
+            cmp = key.compareTo(x.getKey());
+            if (cmp < 0)
+                x = x.getLeft();
+            else if (cmp > 0)
+                x = x.getRight();
+            else {
+                x.setValue(value);
+                return;
+            }
+        }
+        Node<K, V> n = new Node<>(key, value, 1, t, null, null);
+        if (t != null) {
+            if (cmp < 0)
+                t.setLeft(n);
+            else
+                t.setRight(n);
+            t.setSize(1 + t.getLeft().getSize() + t.getRight().getSize());
+        } else {
+            root = n;
+        }
+    }
+
+    /**
+     * Removes the specified key and its associated value from this symbol table
+     * (if the key is is in this symbol table) and return old value.
+     *
+     * @param key the key
+     * @return the old value (if return {@code null} symbol table no contain the key)
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     * @throws NoSuchElementException   if the symbol table is empty
+     */
+    public V remove(K key) {
+        if (key == null)
+            throw new IllegalArgumentException();
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        V oldValue = get(key);
+        if (oldValue == null)
+            return null;
+        remove(root, key);
+        return oldValue;
+    }
+
+    protected void remove(Node<K, V> x, K key) {
+        while (x != null) {
+            int cmp = key.compareTo(x.getKey());
+            if (cmp < 0)
+                x = x.getLeft();
+            else if (cmp > 0)
+                x = x.getRight();
+            else {
+                if (x.getLeft() != null && x.getRight() != null) {
+                    Node<K, V> successor = successor(x);
+                    x.setKey(successor.getKey());
+                    x.setValue(successor.getValue());
+                    x = successor;
+                }
+                Node<K, V> replacement = (x.getLeft() != null) ? x.getLeft() : x.getRight();
+                removeSingleNode(x, replacement);
+                x = null;
+            }
+        }
     }
 
     /**
