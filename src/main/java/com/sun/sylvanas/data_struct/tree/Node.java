@@ -5,10 +5,10 @@ package com.sun.sylvanas.data_struct.tree;
  */
 public class Node<K, V> {
 
-    private K key;
-    private V value;
-    private int size = 0;
-    private Node<K, V> parent, left, right;
+    protected K key;
+    protected V value;
+    protected int size = 0;
+    protected Node<K, V> parent, left, right;
 
     public Node(K key, V value, int size, Node<K, V> parent, Node<K, V> left, Node<K, V> right) {
         this.key = key;

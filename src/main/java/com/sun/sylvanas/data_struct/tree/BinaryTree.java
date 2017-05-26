@@ -22,9 +22,6 @@ public class BinaryTree<K extends Comparable<K>, V> implements Serializable, Ite
 
     private Node<K, V> root;
 
-    public BinaryTree() {
-    }
-
     /**
      * Returns the number of key-value pairs in this symbol table.
      *
