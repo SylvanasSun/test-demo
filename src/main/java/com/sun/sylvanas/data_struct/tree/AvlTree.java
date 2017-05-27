@@ -1,7 +1,12 @@
 package com.sun.sylvanas.data_struct.tree;
 
+import com.sun.org.apache.bcel.internal.generic.GETFIELD;
+import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
+
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 /**
  * Created by SylvanasSun on 2017/5/26.
@@ -87,10 +92,120 @@ public class AvlTree<K extends Comparable<K>, V> extends BinaryTree<K, V> implem
                 parent.setLeft(newNode);
             else
                 parent.setRight(newNode);
+            parent.size = 1 + size(parent.getLeft()) + size(parent.getRight());
             balance(parent);
         }
     }
 
+    @SuppressWarnings("Duplicates")
+    @Override
+    public V remove(K key) {
+        if (key == null)
+            throw new IllegalArgumentException();
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        V oldValue = get(key);
+        if (oldValue == null)
+            return null;
+        remove(root, key);
+        return oldValue;
+    }
+
+    @Override
+    public K select(int k) {
+        if (k < 0 && k >= size())
+            throw new IllegalArgumentException();
+        Node<K, V> x = select(root, k);
+        if (x == null)
+            return null;
+        else
+            return x.getKey();
+    }
+
+    @Override
+    public int rank(K key) {
+        if (key == null)
+            throw new IllegalArgumentException();
+
+        return rank(root, key);
+    }
+
+    @Override
+    public K floor(K key) {
+        if (key == null)
+            throw new IllegalArgumentException();
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        Node<K, V> x = floor(root, key);
+        if (x == null)
+            return null;
+        else
+            return x.getKey();
+    }
+
+    @Override
+    public K ceiling(K key) {
+        if (key == null)
+            throw new IllegalArgumentException();
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        Node<K, V> x = ceiling(root, key);
+        if (x == null)
+            return null;
+        else
+            return x.getKey();
+    }
+
+    @SuppressWarnings("Duplicates")
+    @Override
+    public V removeMax() {
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        V oldValue = get(max());
+        if (oldValue == null)
+            return null;
+        removeMax(root);
+        return oldValue;
+    }
+
+    @SuppressWarnings("Duplicates")
+    @Override
+    public V removeMin() {
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        V oldValue = get(min());
+        if (oldValue == null)
+            return null;
+        removeMin(root);
+        return oldValue;
+    }
+
+    @Override
+    public K min() {
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        AvlNode<K, V> x = root;
+        while (x.getLeft() != null)
+            x = (AvlNode<K, V>) x.getLeft();
+        return x.getKey();
+    }
+
+    @Override
+    public K max() {
+        if (isEmpty())
+            throw new NoSuchElementException();
+
+        AvlNode<K, V> x = root;
+        while (x.getRight() != null)
+            x = (AvlNode<K, V>) x.getRight();
+        return x.getKey();
+    }
 
     @Override
     protected void removeSingleNode(Node<K, V> x, Node<K, V> successor) {
@@ -220,6 +335,7 @@ public class AvlTree<K extends Comparable<K>, V> extends BinaryTree<K, V> implem
                     subRight = rotateRight(subRight);
                 x = rotateLeft(x);
             }
+            x.size = 1 + size(x.getLeft()) + size(x.getRight());
             x = (AvlNode<K, V>) x.getParent();
         }
     }
@@ -228,4 +344,58 @@ public class AvlTree<K extends Comparable<K>, V> extends BinaryTree<K, V> implem
     public Iterator<K> iterator() {
         return new TreeIterator(root);
     }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        AvlTree<String, Integer> tree = new AvlTree<>();
+        int count = 0;
+        System.out.println("Please input specified command.");
+        while (scanner.hasNextLine()) {
+            String command = scanner.nextLine();
+            if ("exit".equalsIgnoreCase(command))
+                break;
+            else if ("forEach".equalsIgnoreCase(command)) {
+                Iterator<String> iterator = tree.iterator();
+                System.out.println("avl tree height: " + tree.height());
+                System.out.println("avl tree size: " + tree.size());
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    Integer value = tree.get(key);
+                    System.out.println(key + "-" + value);
+                }
+            } else if ("min".equalsIgnoreCase(command)) {
+                String min = tree.min();
+                System.out.printf("execute min result %s-%d\n", min, tree.get(min));
+            } else if ("max".equalsIgnoreCase(command)) {
+                String max = tree.max();
+                System.out.printf("execute max result %s-%d\n", max, tree.get(max));
+            } else if ("put".equalsIgnoreCase(command.substring(0, 3))) {
+                String key = command.substring(4);
+                System.out.printf("execute put %s-%d\n", key, count++);
+                tree.put(key, count);
+            } else if ("get".equalsIgnoreCase(command.substring(0, 3))) {
+                String key = command.substring(4);
+                System.out.printf("execute get %s result %d\n", key, tree.get(key));
+            } else if ("remove".equalsIgnoreCase(command.substring(0, 6))) {
+                String key = command.substring(7);
+                System.out.printf("execute remove %s-%d\n", key, tree.remove(key));
+            } else if ("select".equalsIgnoreCase(command.substring(0, 6))) {
+                String s = command.substring(7);
+                Integer index = Integer.valueOf(s);
+                System.out.printf("execute select index: %d,key: %s\n", index, tree.select(index));
+            } else if ("rank".equalsIgnoreCase(command.substring(0, 4))) {
+                String key = command.substring(5);
+                System.out.printf("execute rank index: %d,key: %s\n", tree.rank(key), key);
+            } else if ("floor".equalsIgnoreCase(command.substring(0, 5))) {
+                String key = command.substring(6);
+                System.out.printf("execute floor key:%s,result:%s\n", key, tree.floor(key));
+            } else if ("ceiling".equalsIgnoreCase(command.substring(0, 7))) {
+                String key = command.substring(8);
+                System.out.printf("execute ceiling key:%s,result:%s\n", key, tree.ceiling(key));
+            } else {
+                System.out.println("Illegal command,please enter again!");
+            }
+        }
+    }
+
 }
