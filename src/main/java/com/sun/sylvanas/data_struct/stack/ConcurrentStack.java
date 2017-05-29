@@ -142,7 +142,7 @@ public class ConcurrentStack<E> implements Iterable<E> {
     }
 
     private class ConcurrentStackIterator implements Iterator<E> {
-        private ConcurrentStack<E> copy;
+        private ConcurrentStack<E> copy = new ConcurrentStack<>();
 
         private ConcurrentStackIterator() {
             Node<E> temp = head.get();
@@ -187,9 +187,12 @@ public class ConcurrentStack<E> implements Iterable<E> {
         thread2.start();
         Thread.sleep(3000);
         boolean result = concurrentStack.size() == 100;
-        if (result)
+        if (result) {
             System.out.println("Test success!");
-        else
+            for (Integer i : concurrentStack)
+                System.out.printf("%d ", i);
+            System.out.println();
+        } else
             System.out.println("Test failed!");
     }
 
