@@ -22,7 +22,7 @@ public class ConcurrentStack<E> implements Iterable<E> {
      */
     private static class Node<E> {
         private final E value;
-        private Node<E> next;
+        private volatile Node<E> next;
 
         private Node(E value, Node<E> next) {
             this.value = value;
