@@ -1,10 +1,9 @@
 package com.sun.sylvanas.application.expression_tree;
 
-import com.sun.sylvanas.data_struct.ArrayStack;
+import com.sun.sylvanas.data_struct.stack.ArrayStack;
 import com.sun.sylvanas.pattern.adapter.Token;
 import com.sun.sylvanas.pattern.adapter.TokenStream;
 import com.sun.sylvanas.pattern.adapter.TokenStreamAdapter;
-import scala.Int;
 
 import java.io.IOException;
 import java.util.Iterator;

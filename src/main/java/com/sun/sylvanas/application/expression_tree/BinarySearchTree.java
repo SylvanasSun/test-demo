@@ -1,6 +1,6 @@
 package com.sun.sylvanas.application.expression_tree;
 
-import com.sun.sylvanas.data_struct.ArrayStack;
+import com.sun.sylvanas.data_struct.stack.ArrayStack;
 
 import java.util.ArrayDeque;
 import java.util.Iterator;

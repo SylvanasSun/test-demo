@@ -1,6 +1,6 @@
 package com.sun.sylvanas.application;
 
-import com.sun.sylvanas.data_struct.ArrayStack;
+import com.sun.sylvanas.data_struct.stack.ArrayStack;
 import com.sun.sylvanas.pattern.adapter.Token;
 import com.sun.sylvanas.pattern.adapter.TokenStreamAdapter;
 

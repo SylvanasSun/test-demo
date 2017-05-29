@@ -1,4 +1,4 @@
-package com.sun.sylvanas.data_struct;
+package com.sun.sylvanas.data_struct.stack;
 
 import java.util.Iterator;
 

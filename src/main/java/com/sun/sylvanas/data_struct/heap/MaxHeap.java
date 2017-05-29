@@ -1,4 +1,4 @@
-package com.sun.sylvanas.data_struct;
+package com.sun.sylvanas.data_struct.heap;
 
 /**
  * 最大堆的简单实现

@@ -1,9 +1,8 @@
 package com.sun.sylvanas.algorithms.sort;
 
-import com.sun.sylvanas.data_struct.MaxHeap;
-import com.sun.sylvanas.data_struct.MinPriorityQueue;
+import com.sun.sylvanas.data_struct.heap.MaxHeap;
+import com.sun.sylvanas.data_struct.heap.MinPriorityQueue;
 
-import javax.el.ELClass;
 import java.util.Scanner;
 
 /**
