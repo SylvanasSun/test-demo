@@ -1,4 +1,4 @@
-package com.sun.sylvanas.application;
+package com.sun.sylvanas.application.expression;
 
 import com.sun.sylvanas.pattern.adapter.Token;
 import com.sun.sylvanas.pattern.adapter.TokenStream;
