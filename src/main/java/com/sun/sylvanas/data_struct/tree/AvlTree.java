@@ -1,8 +1,5 @@
 package com.sun.sylvanas.data_struct.tree;
 
-import com.sun.org.apache.bcel.internal.generic.GETFIELD;
-import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
-
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
