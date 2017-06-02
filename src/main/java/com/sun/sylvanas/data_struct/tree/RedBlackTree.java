@@ -96,6 +96,46 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
             throw new IllegalArgumentException(message);
     }
 
+    private void fixAfterInsertion(Node x) {
+        while (x != null && x != root && x.parent.color == RED) {
+            if (x.parent == x.parent.parent.left) {
+                Node xUncle = x.parent.parent.right;
+                if (xUncle.color == RED) {
+                    xUncle.color = BLACK;
+                    x.parent.color = BLACK;
+                    x.parent.parent.color = RED;
+                    x = x.parent.parent;
+                } else {
+                    if (x == x.parent.right) {
+                        x = x.parent;
+                        rotateLeft(x);
+                    }
+                    rotateRight(x.parent.parent);
+                }
+            } else {
+                Node xUncle = x.parent.parent.left;
+                if (xUncle.color == RED) {
+                    xUncle.color = BLACK;
+                    x.parent.color = BLACK;
+                    x.parent.parent.color = RED;
+                    x = x.parent.parent;
+                } else {
+                    if (x == x.parent.left) {
+                        x = x.parent;
+                        rotateRight(x);
+                    }
+                    rotateLeft(x.parent.parent);
+                }
+            }
+        }
+        root.color = BLACK;
+    }
+
+    private void setColor(Node x, boolean color) {
+        if (x != null)
+            x.color = color;
+    }
+
     private Node rotateLeft(Node x) {
         Node t = x.right;
         x.right = t.left;
