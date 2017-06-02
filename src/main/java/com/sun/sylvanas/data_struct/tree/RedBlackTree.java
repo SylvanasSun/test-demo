@@ -52,6 +52,21 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     /**
+     * Returns the number of this red black tree height.
+     *
+     * @return the number of this red black tree height
+     */
+    public int height() {
+        return height(root);
+    }
+
+    private int height(Node x) {
+        if (x == null)
+            return -1;
+        return 1 + Math.max(height(x.left), height(x.right));
+    }
+
+    /**
      * Returns the value associated with the given key.
      *
      * @param key the key
