@@ -97,38 +97,48 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     private void fixAfterInsertion(Node x) {
-        while (x != null && x != root && x.parent.color == RED) {
-            if (x.parent == x.parent.parent.left) {
-                Node xUncle = x.parent.parent.right;
-                if (xUncle.color == RED) {
-                    xUncle.color = BLACK;
-                    x.parent.color = BLACK;
-                    x.parent.parent.color = RED;
-                    x = x.parent.parent;
-                } else {
-                    if (x == x.parent.right) {
-                        x = x.parent;
-                        rotateLeft(x);
-                    }
-                    rotateRight(x.parent.parent);
-                }
+        while (x != null && x != root && parentOf(x).color == RED) {
+            if (parentOf(x) == grandpaOf(x).left) {
+                x = parentIsLeftNode(x);
             } else {
-                Node xUncle = x.parent.parent.left;
-                if (xUncle.color == RED) {
-                    xUncle.color = BLACK;
-                    x.parent.color = BLACK;
-                    x.parent.parent.color = RED;
-                    x = x.parent.parent;
-                } else {
-                    if (x == x.parent.left) {
-                        x = x.parent;
-                        rotateRight(x);
-                    }
-                    rotateLeft(x.parent.parent);
-                }
+                x = parentIsRightNode(x);
             }
         }
-        root.color = BLACK;
+    }
+
+    private Node parentIsLeftNode(Node x) {
+        Node xUncle = grandpaOf(x).right;
+        if (xUncle.color == RED) {
+            x = brotherNodeIsRed(x, xUncle);
+        } else {
+            if (x == parentOf(x).right) {
+                x = parentOf(x);
+                rotateLeft(x);
+            }
+            rotateRight(grandpaOf(x));
+        }
+        return x;
+    }
+
+    private Node parentIsRightNode(Node x) {
+        Node xUncle = grandpaOf(x).left;
+        if (xUncle.color == RED) {
+            x = brotherNodeIsRed(x, xUncle);
+        } else {
+            if (x == parentOf(x).left) {
+                x = parentOf(x);
+                rotateRight(x);
+            }
+            rotateLeft(grandpaOf(x));
+        }
+        return x;
+    }
+
+    private Node brotherNodeIsRed(Node x, Node xUncle) {
+        xUncle.color = BLACK;
+        parentOf(x).color = BLACK;
+        grandpaOf(x).color = RED;
+        return grandpaOf(x);
     }
 
     private void setColor(Node x, boolean color) {
@@ -173,6 +183,14 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 xParent.right = t;
         }
         x.parent = t;
+    }
+
+    private Node parentOf(Node x) {
+        return x == null ? null : x.parent;
+    }
+
+    private Node grandpaOf(Node x) {
+        return x == null ? null : x.parent.parent;
     }
 
     @Override
