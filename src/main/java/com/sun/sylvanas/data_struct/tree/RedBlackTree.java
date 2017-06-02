@@ -119,6 +119,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 x = parentIsRightNode(x);
             }
         }
+        root.color = BLACK;
     }
 
     private Node parentIsLeftNode(Node x) {
