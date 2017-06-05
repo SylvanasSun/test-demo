@@ -31,6 +31,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         public Node(K key, V value) {
             this.key = key;
             this.value = value;
+            this.size = 1;
         }
     }
 
@@ -78,7 +79,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
      * @throws IllegalArgumentException if {@code key} is {@code null}
      */
     public V get(K key) {
-        checkKeyIsNull(key, "called get() function use the key is null.");
+        checkKeyIsNull(key, "called get(K key) function use the key is null.");
         return getValueAssociatedWithKey(key);
     }
 
@@ -105,8 +106,61 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
      * @throws IllegalArgumentException if {@code key} is {@code null}
      */
     public boolean contains(K key) {
-        checkKeyIsNull(key, "called contains() function use the key is null.");
+        checkKeyIsNull(key, "called contains(K key) function use the key is null.");
         return getValueAssociatedWithKey(key) != null;
+    }
+
+    /**
+     * Inserts the specified key-value pair into the symbol table, overwriting the old
+     * value with the new value if the symbol table already contains the specified key.
+     * Deletes the specified key (and its associated value) from this symbol table
+     * if the specified value is {@code null}.
+     *
+     * @param key   the key
+     * @param value the value
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     */
+    public void put(K key, V value) {
+        checkKeyIsNull(key, "called put(K key,V value) function use the key is null.");
+        if (value == null) {
+            remove(key);
+            return;
+        }
+
+        putNewNodeOrUpdate(key, value);
+    }
+
+    private void putNewNodeOrUpdate(K key, V value) {
+        Node x = root;
+        int cmp = 0;
+        Node parent = null;
+        while (x != null) {
+            parent = x;
+            cmp = key.compareTo(x.key);
+            if (cmp < 0)
+                x = x.left;
+            else if (cmp > 0)
+                x = x.right;
+            else {
+                x.value = value;
+                return;
+            }
+        }
+
+        Node newNode = new Node(key, value);
+        setColor(newNode, RED);
+        newNode.parent = parent;
+        if (parent != null) {
+            if (cmp < 0)
+                parent.left = newNode;
+            else
+                parent.right = newNode;
+            parent.size = 1 + size(parent.left) + size(parent.right);
+            fixAfterInsertion(newNode);
+        } else {
+            root = newNode;
+            setColor(root, BLACK);
+        }
     }
 
     /**
@@ -119,8 +173,8 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
      * @throws NoSuchElementException   if the symbol table is empty
      */
     public V remove(K key) {
-        checkKeyIsNull(key, "called remove() function use the key is null.");
-        checkEmpty("called remove() function the this red black tree is empty.");
+        checkKeyIsNull(key, "called remove(K key) function use the key is null.");
+        checkEmpty("called remove(K key) function the this red black tree is empty.");
 
         V result = get(key);
         if (result == null)
