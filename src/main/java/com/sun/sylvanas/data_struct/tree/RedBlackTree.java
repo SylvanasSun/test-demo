@@ -164,6 +164,52 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     /**
+     * Returns the smallest key in the symbol table.
+     *
+     * @return the smallest key in the symbol table
+     * @throws NoSuchElementException if the symbol table is empty
+     */
+    public K min() {
+        checkEmpty("called min() function the this red black tree is empty.");
+
+        Node smallestNode = getSmallestNode();
+        if (smallestNode == null)
+            return null;
+        else
+            return smallestNode.key;
+    }
+
+    private Node getSmallestNode() {
+        Node x = root;
+        while (x.left != null)
+            x = x.left;
+        return x;
+    }
+
+    /**
+     * Returns the largest key in the symbol table.
+     *
+     * @return the largest key in the symbol table
+     * @throws NoSuchElementException if the symbol table is empty
+     */
+    public K max() {
+        checkEmpty("called max() function the this red black tree is empty.");
+
+        Node largestNode = getLargestNode();
+        if (largestNode == null)
+            return null;
+        else
+            return largestNode.key;
+    }
+
+    private Node getLargestNode() {
+        Node x = root;
+        while (x.right != null)
+            x = x.right;
+        return x;
+    }
+
+    /**
      * Removes the specified key and its associated value from this symbol table
      * (if the key is is in this symbol table) and return old value.
      *
