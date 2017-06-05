@@ -210,6 +210,98 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     /**
+     * Returns the largest key in the symbol table less than or equals to {@code key}.
+     *
+     * @param key the key
+     * @return the largest key in the symbol table less than or equals to {@code key}
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     * @throws NoSuchElementException   if there is no such key
+     */
+    public K floor(K key) {
+        checkKeyIsNull(key, "called floor(K key) function use the key is null.");
+        checkEmpty("called floor(K key) function the this red black tree is empty.");
+
+        Node x = getFloorNodeWithKey(key);
+        if (x == null)
+            return null;
+        else
+            return x.key;
+    }
+
+    private Node getFloorNodeWithKey(K key) {
+        Node x = root;
+        while (x != null) {
+            int cmp = key.compareTo(x.key);
+            if (cmp > 0) {
+                if (x.right != null)
+                    x = x.right;
+                else
+                    return x;
+            } else if (cmp < 0) {
+                if (x.left != null)
+                    x = x.left;
+                else {
+                    Node t = x;
+                    Node p = x.parent;
+                    while (p != null && t == p.left) {
+                        t = p;
+                        p = p.parent;
+                    }
+                    return p;
+                }
+            } else {
+                return x;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the smallest key in the symbol table greater than or equals to {@code key}.
+     *
+     * @param key the key
+     * @return the smallest key in the symbol table greater than or equals to {@code key}
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     * @throws NoSuchElementException   if there is no such key
+     */
+    public K ceiling(K key) {
+        checkKeyIsNull(key, "called ceiling(K key) function use key is null.");
+        checkEmpty("called ceiling(K key) function the red black tree is empty.");
+
+        Node x = getCeilingNodeWithKey(key);
+        if (x == null)
+            return null;
+        else
+            return x.key;
+    }
+
+    private Node getCeilingNodeWithKey(K key) {
+        Node x = root;
+        while (x != null) {
+            int cmp = key.compareTo(x.key);
+            if (cmp < 0) {
+                if (x.left != null)
+                    x = x.left;
+                else
+                    return x;
+            } else if (cmp > 0) {
+                if (x.right != null)
+                    x = x.right;
+                else {
+                    Node t = x;
+                    Node p = x.parent;
+                    while (p != null && t == p.right) {
+                        t = p;
+                        p = p.parent;
+                    }
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Removes the specified key and its associated value from this symbol table
      * (if the key is is in this symbol table) and return old value.
      *
