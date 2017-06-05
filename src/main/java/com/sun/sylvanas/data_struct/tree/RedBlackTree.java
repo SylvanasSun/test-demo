@@ -210,6 +210,57 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     /**
+     * Removes the smallest key and associated value from the symbol table.
+     * and return old value.
+     *
+     * @return @return the old value (if return {@code null} symbol table no contain the key)
+     * @throws NoSuchElementException if the symbol table is empty
+     */
+    public V removeMin() {
+        checkEmpty("called removeMin() function the red black tree is empty.");
+
+        V smallestValue = getSmallestNode().value;
+        if (smallestValue == null)
+            return null;
+
+        removeSmallestNode();
+        return smallestValue;
+    }
+
+    private void removeSmallestNode() {
+        Node smallestNode = getSmallestNode();
+        Node replacement = smallestNode.right;
+        removeSingleNode(smallestNode, replacement);
+        smallestNode = null;
+    }
+
+    /**
+     * Removes the largest key and associated value from the symbol table.
+     * and return old value.
+     *
+     * @return @return the old value (if return {@code null} symbol table no contain the key)
+     * @throws NoSuchElementException if the symbol table is empty
+     */
+    public V removeMax() {
+        checkEmpty("called removeMax() function the red black tree is empty.");
+
+        V largestValue = getLargestNode().value;
+        if (largestValue == null)
+            return null;
+
+        removeLargestNode();
+        return largestValue;
+    }
+
+    private void removeLargestNode() {
+        Node largestNode = getLargestNode();
+        Node replacement = largestNode.left;
+        removeSingleNode(largestNode, replacement);
+        largestNode = null;
+    }
+
+
+    /**
      * Returns the largest key in the symbol table less than or equals to {@code key}.
      *
      * @param key the key
