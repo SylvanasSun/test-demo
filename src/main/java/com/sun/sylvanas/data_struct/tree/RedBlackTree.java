@@ -1,9 +1,9 @@
 package com.sun.sylvanas.data_struct.tree;
 
+import org.omg.CORBA.PRIVATE_MEMBER;
 import sun.plugin2.message.PrintAppletReplyMessage;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * The {@code RedBlackTree} class represents an ordered symbol table of generic
@@ -684,7 +684,54 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
 
     @Override
     public Iterator<K> iterator() {
-        return null;
+        return new RedBlackTreeIterator();
+    }
+
+    private class RedBlackTreeIterator implements Iterator<K> {
+        private Queue<K> keyQueue;
+        private Stack<Node> statusStack;
+        private Node temp;
+
+        RedBlackTreeIterator() {
+            this.keyQueue = new ArrayDeque<K>();
+            this.statusStack = new Stack<Node>();
+            this.temp = root;
+            inorder();
+        }
+
+        void inorder() {
+            statusStack.push(temp);
+            while (!statusStack.isEmpty()) {
+                Node x = statusStack.peek();
+                if (x.orderStatus == 0) {
+                    if (x.left != null)
+                        statusStack.push(x.left);
+                    x.orderStatus = 1;
+                } else if (x.orderStatus == 1) {
+                    keyQueue.add(x.key);
+                    x.orderStatus = 2;
+                } else if (x.orderStatus == 2) {
+                    if (x.right != null)
+                        statusStack.push(x.right);
+                    x.orderStatus = 3;
+                } else if (x.orderStatus == 3) {
+                    statusStack.pop();
+                    x.orderStatus = 0;
+                }
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !keyQueue.isEmpty();
+        }
+
+        @Override
+        public K next() {
+            if (!hasNext())
+                throw new NullPointerException();
+            return keyQueue.remove();
+        }
     }
 
 }
