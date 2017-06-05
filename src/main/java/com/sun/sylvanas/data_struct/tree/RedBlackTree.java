@@ -1,5 +1,7 @@
 package com.sun.sylvanas.data_struct.tree;
 
+import sun.plugin2.message.PrintAppletReplyMessage;
+
 import java.util.Iterator;
 
 /**
@@ -119,13 +121,13 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 x = parentIsRightNode(x);
             }
         }
-        root.color = BLACK;
+        setColor(root, BLACK);
     }
 
     private Node parentIsLeftNode(Node x) {
         Node xUncle = grandpaOf(x).right;
         if (xUncle.color == RED) {
-            x = brotherNodeIsRed(x, xUncle);
+            x = uncleIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).right) {
                 x = parentOf(x);
@@ -139,7 +141,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     private Node parentIsRightNode(Node x) {
         Node xUncle = grandpaOf(x).left;
         if (xUncle.color == RED) {
-            x = brotherNodeIsRed(x, xUncle);
+            x = uncleIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).left) {
                 x = parentOf(x);
@@ -150,11 +152,73 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         return x;
     }
 
-    private Node brotherNodeIsRed(Node x, Node xUncle) {
-        xUncle.color = BLACK;
-        parentOf(x).color = BLACK;
-        grandpaOf(x).color = RED;
-        return grandpaOf(x);
+    private Node uncleIsRed(Node x, Node xUncle) {
+        setColor(parentOf(x), BLACK);
+        setColor(xUncle, BLACK);
+        setColor(grandpaOf(x), RED);
+        x = grandpaOf(x);
+        return x;
+    }
+
+    private void fixAfterDeletion(Node x) {
+        while (x != null && x != root && x.color == BLACK) {
+            if (x == parentOf(x).left) {
+                x = successorIsLeftNode(x);
+            } else {
+                x = successorIsRightNode(x);
+            }
+        }
+        setColor(x, BLACK);
+    }
+
+    private Node successorIsLeftNode(Node x) {
+        Node brother = parentOf(x).right;
+
+        if (brother.color == RED) {
+            rotateLeft(parentOf(x));
+            brother = parentOf(x).right;
+        }
+
+        if (brother.left.color == BLACK && brother.right.color == BLACK) {
+            x = brotherChildrenIsBlack(x, brother);
+        } else {
+            if (brother.right.color == BLACK) {
+                rotateRight(brother);
+                brother = parentOf(x).right;
+            }
+            setColor(brother.right, BLACK);
+            rotateLeft(parentOf(x));
+            x = root;
+        }
+        return x;
+    }
+
+    private Node successorIsRightNode(Node x) {
+        Node brother = parentOf(x).left;
+
+        if (brother.color == RED) {
+            rotateRight(parentOf(x));
+            brother = parentOf(x).left;
+        }
+
+        if (brother.left.color == BLACK && brother.right.color == BLACK) {
+            x = brotherChildrenIsBlack(x, brother);
+        } else {
+            if (brother.left.color == BLACK) {
+                rotateLeft(brother);
+                brother = parentOf(x).left;
+            }
+            setColor(brother.left, BLACK);
+            rotateRight(parentOf(x));
+            x = root;
+        }
+        return x;
+    }
+
+    private Node brotherChildrenIsBlack(Node x, Node brother) {
+        setColor(brother, RED);
+        x = parentOf(x);
+        return x;
     }
 
     private void setColor(Node x, boolean color) {
@@ -181,8 +245,9 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     private void swapColorAndSize(Node x, Node t) {
+        boolean temp = t.color;
         t.color = x.color;
-        x.color = RED;
+        x.color = temp;
         t.size = x.size;
         x.size = 1 + size(x.left) + size(x.right);
     }
