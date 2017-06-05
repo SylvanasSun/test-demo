@@ -259,6 +259,66 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         largestNode = null;
     }
 
+    /**
+     * Return the kth smallest key in the symbol table.
+     *
+     * @param index the order statistic
+     * @return the {@code k}th smallest key in the symbol table
+     * @throws IllegalArgumentException unless {@code k} is between 0 and <em>n</em> - 1
+     */
+    public K select(int index) {
+        if (index < 0 || index >= size())
+            throw new IllegalArgumentException();
+
+        Node x = getNodeWithIndex(index);
+        if (x == null)
+            return null;
+        else
+            return x.key;
+    }
+
+    private Node getNodeWithIndex(int index) {
+        Node x = root;
+        while (x != null) {
+            int leftSize = size(x.left);
+            if (leftSize > index)
+                x = x.left;
+            else if (leftSize < index) {
+                x = x.right;
+                index = index - leftSize - 1;
+            } else {
+                return x;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Return the number of keys in the symbol table strictly less than {@code key}.
+     *
+     * @param key the key
+     * @return the number of keys in the symbol table strictly less than {@code key}
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     */
+    public int rank(K key) {
+        checkKeyIsNull(key, "called rank(K key) function use key is null.");
+
+        return getIndexWithKey(root, key);
+    }
+
+    private int getIndexWithKey(Node x, K key) {
+        if (x == null)
+            return 0;
+
+        int cmp = key.compareTo(x.key);
+        if (cmp < 0)
+            return getIndexWithKey(x.left, key);
+        else if (cmp > 0)
+            return 1 + size(x.left) + getIndexWithKey(x.right, key);
+        else
+            return size(x.left);
+    }
+
 
     /**
      * Returns the largest key in the symbol table less than or equals to {@code key}.
