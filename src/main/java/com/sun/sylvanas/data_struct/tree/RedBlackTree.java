@@ -3,6 +3,7 @@ package com.sun.sylvanas.data_struct.tree;
 import sun.plugin2.message.PrintAppletReplyMessage;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * The {@code RedBlackTree} class represents an ordered symbol table of generic
@@ -108,9 +109,113 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         return getValueAssociatedWithKey(key) != null;
     }
 
+    /**
+     * Removes the specified key and its associated value from this symbol table
+     * (if the key is is in this symbol table) and return old value.
+     *
+     * @param key the key
+     * @return the old value (if return {@code null} symbol table no contain the key)
+     * @throws IllegalArgumentException if {@code key} is {@code null}
+     * @throws NoSuchElementException   if the symbol table is empty
+     */
+    public V remove(K key) {
+        checkKeyIsNull(key, "called remove() function use the key is null.");
+        checkEmpty("called remove() function the this red black tree is empty.");
+
+        V result = get(key);
+        if (result == null)
+            return null;
+        removeNodeWithKey(root, key);
+        return result;
+    }
+
+    private void removeNodeWithKey(Node x, K key) {
+        while (x != null) {
+            int cmp = key.compareTo(x.key);
+            if (cmp < 0)
+                x = x.left;
+            else if (cmp > 0)
+                x = x.right;
+            else {
+                if (x.left != null && x.right != null) {
+                    Node successor = successor(x);
+                    x.key = successor.key;
+                    x.value = successor.value;
+                    x.size = x.size - 1;
+                    x = successor;
+                }
+                Node replacement = x.left != null ? x.left : x.right;
+                removeSingleNode(x, replacement);
+                x = null;
+            }
+        }
+    }
+
+    private void removeSingleNode(Node x, Node replacement) {
+        if (replacement != null) {
+            replacementNotNull(x, replacement);
+        } else if (x.parent == null) {
+            root = null;
+        } else {
+            replacementIsNull(x);
+        }
+    }
+
+    private void replacementNotNull(Node x, Node replacement) {
+        Node xParent = x.parent;
+        replacement.parent = xParent;
+        if (xParent == null)
+            root = replacement;
+        else {
+            if (x == xParent.left)
+                xParent.left = replacement;
+            else
+                xParent.right = replacement;
+            xParent.size = 1 + size(xParent.left) + size(xParent.right);
+        }
+        x.left = x.right = x.parent = null;
+        if (x.color == BLACK)
+            fixAfterDeletion(replacement);
+    }
+
+    private void replacementIsNull(Node x) {
+        if (x.color == BLACK)
+            fixAfterDeletion(x);
+
+        Node xParent = x.parent;
+        if (x == xParent.left)
+            xParent.left = null;
+        else
+            xParent.right = null;
+        xParent.size = 1 + size(xParent.left) + size(xParent.right);
+    }
+
+    private Node successor(Node x) {
+        if (x == null) return null;
+        Node xRight = x.right;
+        if (xRight != null) {
+            while (xRight.left != null)
+                xRight = xRight.left;
+            return xRight;
+        } else {
+            Node t = x;
+            Node p = x.parent;
+            while (p != null && t == p.right) {
+                t = p;
+                p = p.parent;
+            }
+            return p;
+        }
+    }
+
     private void checkKeyIsNull(K key, String message) {
         if (key == null)
             throw new IllegalArgumentException(message);
+    }
+
+    private void checkEmpty(String message) {
+        if (isEmpty())
+            throw new NoSuchElementException(message);
     }
 
     private void fixAfterInsertion(Node x) {
