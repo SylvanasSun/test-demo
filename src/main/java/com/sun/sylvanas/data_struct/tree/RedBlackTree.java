@@ -525,10 +525,16 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
             } else {
                 x = parentIsRightNode(x);
             }
-            setSize(x);
+            fixSize(x);
         }
-        setSize(root);
         setColor(root, BLACK);
+    }
+
+    private void fixSize(Node x) {
+        while (x != null) {
+            setSize(x);
+            x = x.parent;
+        }
     }
 
     private void setSize(Node x) {
@@ -767,11 +773,12 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 System.out.printf("execute get, result = %s-%d\n", key, tree.get(key));
             } else if (command.substring(0, 3).equalsIgnoreCase("put")) {
                 String key = command.substring(4);
-                System.out.printf("execute put %s-%d\n", key, value);
+                System.out.printf("execute put %s-%d ", key, value);
                 tree.put(key, value++);
+                System.out.printf("size = %d \n", tree.size());
             } else if (command.substring(0, 6).equalsIgnoreCase("remove")) {
                 String key = command.substring(7);
-                System.out.printf("execute remove %s-%d\n", key, tree.remove(key));
+                System.out.printf("execute remove %s-%d size = %d \n", key, tree.remove(key), tree.size());
             } else {
                 System.out.printf("Invalid command!\n");
             }
