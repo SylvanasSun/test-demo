@@ -471,7 +471,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 xParent.left = replacement;
             else
                 xParent.right = replacement;
-            setSize(xParent);
+            fixSize(xParent);
         }
         x.left = x.right = x.parent = null;
         if (x.color == BLACK)
@@ -487,7 +487,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
             xParent.left = null;
         else
             xParent.right = null;
-        setSize(xParent);
+        fixSize(xParent);
     }
 
     private Node successor(Node x) {
@@ -581,7 +581,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     private void fixAfterDeletion(Node x) {
-        while (x != null && x != root && x.color == BLACK) {
+        while (x != null && x != root && colorOf(x) == BLACK) {
             if (x == parentOf(x).left) {
                 x = successorIsLeftNode(x);
             } else {
@@ -594,15 +594,15 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     private Node successorIsLeftNode(Node x) {
         Node brother = parentOf(x).right;
 
-        if (brother.color == RED) {
+        if (colorOf(brother) == RED) {
             rotateLeft(parentOf(x));
             brother = parentOf(x).right;
         }
 
-        if (brother.left.color == BLACK && brother.right.color == BLACK) {
-            x = brotherChildrenIsBlack(x, brother);
+        if (colorOf(brother.left) == BLACK && colorOf(brother.right) == BLACK) {
+            x = brotherChildrenColorIsBlack(x, brother);
         } else {
-            if (brother.right.color == BLACK) {
+            if (colorOf(brother.right) == BLACK) {
                 rotateRight(brother);
                 brother = parentOf(x).right;
             }
@@ -616,15 +616,15 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     private Node successorIsRightNode(Node x) {
         Node brother = parentOf(x).left;
 
-        if (brother.color == RED) {
+        if (colorOf(brother) == RED) {
             rotateRight(parentOf(x));
             brother = parentOf(x).left;
         }
 
-        if (brother.left.color == BLACK && brother.right.color == BLACK) {
-            x = brotherChildrenIsBlack(x, brother);
+        if (colorOf(brother.left) == BLACK && colorOf(brother.right) == BLACK) {
+            x = brotherChildrenColorIsBlack(x, brother);
         } else {
-            if (brother.left.color == BLACK) {
+            if (colorOf(brother.left) == BLACK) {
                 rotateLeft(brother);
                 brother = parentOf(x).left;
             }
@@ -635,7 +635,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         return x;
     }
 
-    private Node brotherChildrenIsBlack(Node x, Node brother) {
+    private Node brotherChildrenColorIsBlack(Node x, Node brother) {
         setColor(brother, RED);
         x = parentOf(x);
         return x;
@@ -778,7 +778,8 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 System.out.printf("size = %d \n", tree.size());
             } else if (command.substring(0, 6).equalsIgnoreCase("remove")) {
                 String key = command.substring(7);
-                System.out.printf("execute remove %s-%d size = %d \n", key, tree.remove(key), tree.size());
+                System.out.printf("execute remove %s-%d ", key, tree.remove(key));
+                System.out.printf("size = %d \n", tree.size());
             } else {
                 System.out.printf("Invalid command!\n");
             }
