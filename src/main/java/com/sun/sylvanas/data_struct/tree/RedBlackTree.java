@@ -1,5 +1,6 @@
 package com.sun.sylvanas.data_struct.tree;
 
+import akka.japi.pf.FI;
 import org.omg.CORBA.PRIVATE_MEMBER;
 import sun.plugin2.message.PrintAppletReplyMessage;
 
@@ -534,7 +535,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
 
     private Node parentIsLeftNode(Node x) {
         Node xUncle = grandpaOf(x).right;
-        if (xUncle.color == RED) {
+        if (xUncle != null && xUncle.color == RED) {
             x = uncleIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).right) {
@@ -548,7 +549,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
 
     private Node parentIsRightNode(Node x) {
         Node xUncle = grandpaOf(x).left;
-        if (xUncle.color == RED) {
+        if (xUncle != null && xUncle.color == RED) {
             x = uncleIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).left) {
@@ -731,6 +732,40 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
             if (!hasNext())
                 throw new NullPointerException();
             return keyQueue.remove();
+        }
+    }
+
+    public static void main(String[] args) {
+        RedBlackTree<String, Integer> tree = new RedBlackTree<>();
+        Scanner scanner = new Scanner(System.in);
+        int value = 0;
+
+        System.out.println("Please enter command!");
+        while (scanner.hasNextLine()) {
+            String command = scanner.nextLine();
+            if (command.equalsIgnoreCase("exit"))
+                break;
+            else if (command.equalsIgnoreCase("select")) {
+                System.out.printf("Red Black Tree height = %d size = %d \n", tree.height(), tree.size());
+                for (String key : tree) {
+                    System.out.printf("key = %s value = %d", key, tree.get(key));
+                    System.out.printf("\n");
+                }
+            } else if (command.equalsIgnoreCase("help")) {
+                System.out.println("command : exit,select,get key,put key,remove key...");
+            } else if (command.substring(0, 3).equalsIgnoreCase("get")) {
+                String key = command.substring(4);
+                System.out.printf("execute get, result = %s-%d\n", key, tree.get(key));
+            } else if (command.substring(0, 3).equalsIgnoreCase("put")) {
+                String key = command.substring(4);
+                System.out.printf("execute put %s-%d\n", key, value);
+                tree.put(key, value++);
+            } else if (command.substring(0, 6).equalsIgnoreCase("remove")) {
+                String key = command.substring(7);
+                System.out.printf("execute remove %s-%d\n", key, tree.remove(key));
+            } else {
+                System.out.printf("Invalid command!\n");
+            }
         }
     }
 
