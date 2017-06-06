@@ -152,7 +152,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 parent.left = newNode;
             else
                 parent.right = newNode;
-            parent.size = 1 + size(parent.left) + size(parent.right);
+            setSize(parent);
             fixAfterInsertion(newNode);
         } else {
             root = newNode;
@@ -471,7 +471,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 xParent.left = replacement;
             else
                 xParent.right = replacement;
-            xParent.size = 1 + size(xParent.left) + size(xParent.right);
+            setSize(xParent);
         }
         x.left = x.right = x.parent = null;
         if (x.color == BLACK)
@@ -487,7 +487,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
             xParent.left = null;
         else
             xParent.right = null;
-        xParent.size = 1 + size(xParent.left) + size(xParent.right);
+        setSize(xParent);
     }
 
     private Node successor(Node x) {
@@ -519,20 +519,28 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
     }
 
     private void fixAfterInsertion(Node x) {
-        while (x != null && x != root && parentOf(x).color == RED) {
+        while (x != null && x != root && colorOf(parentOf(x)) == RED) {
             if (parentOf(x) == grandpaOf(x).left) {
                 x = parentIsLeftNode(x);
             } else {
                 x = parentIsRightNode(x);
             }
+            setSize(x);
         }
+        setSize(root);
         setColor(root, BLACK);
+    }
+
+    private void setSize(Node x) {
+        if (x != null)
+            x.size = 1 + size(x.left) + size(x.right);
     }
 
     private Node parentIsLeftNode(Node x) {
         Node xUncle = grandpaOf(x).right;
-        if (xUncle != null && xUncle.color == RED) {
-            x = uncleIsRed(x, xUncle);
+
+        if (colorOf(xUncle) == RED) {
+            x = uncleColorIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).right) {
                 x = parentOf(x);
@@ -545,8 +553,9 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
 
     private Node parentIsRightNode(Node x) {
         Node xUncle = grandpaOf(x).left;
-        if (xUncle != null && xUncle.color == RED) {
-            x = uncleIsRed(x, xUncle);
+
+        if (colorOf(xUncle) == RED) {
+            x = uncleColorIsRed(x, xUncle);
         } else {
             if (x == parentOf(x).left) {
                 x = parentOf(x);
@@ -557,7 +566,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         return x;
     }
 
-    private Node uncleIsRed(Node x, Node xUncle) {
+    private Node uncleColorIsRed(Node x, Node xUncle) {
         setColor(parentOf(x), BLACK);
         setColor(xUncle, BLACK);
         setColor(grandpaOf(x), RED);
@@ -653,8 +662,8 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
         boolean temp = t.color;
         t.color = x.color;
         x.color = temp;
-        t.size = x.size;
-        x.size = 1 + size(x.left) + size(x.right);
+        setSize(x);
+        setSize(t);
     }
 
     private void swapParent(Node x, Node t) {
@@ -669,6 +678,10 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
                 xParent.right = t;
         }
         x.parent = t;
+    }
+
+    private boolean colorOf(Node x) {
+        return x == null ? BLACK : x.color;
     }
 
     private Node parentOf(Node x) {
