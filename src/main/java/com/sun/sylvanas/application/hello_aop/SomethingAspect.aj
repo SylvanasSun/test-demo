@@ -9,7 +9,7 @@ public aspect SomethingAspect {
     /**
      * 切入点,切入到Something.say()
      */
-    pointcut recordLog():call(* com.sun.sylvanas.application.hello_aop.Something.say(..));
+    pointcut recordLog():call(void Something.say());
 
     /**
      * 在方法执行后执行
