@@ -103,7 +103,7 @@ public class MaxPriorityQueue<T> implements Serializable, Iterable<T> {
     @SuppressWarnings("unchecked")
     private void swim(int i, T t) {
         Comparable<? super T> key = (Comparable) t;
-        while (i < 0) {
+        while (i > 0) {
             int parent = (i - 1) >>> 1;
             T p = (T) queue[parent];
             if (key.compareTo(p) < 0)
