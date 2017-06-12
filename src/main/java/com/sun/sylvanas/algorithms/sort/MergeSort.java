@@ -17,10 +17,10 @@ public class MergeSort extends BaseSort {
     private static void sortUnRecursive(Comparable[] a) {
         int len = 1; // 自底向上实现归并排序,子序列的最小粒度为1
         while (len < a.length) {
-            for (int i = 0; i < a.length; i += len * 2) {
+            for (int i = 0; i < a.length; i += len << 1) {
                 merge(a, i, len);
             }
-            len *= 2; // 子序列规模每次迭代时乘2
+            len = len << 1; // 子序列规模每次迭代时乘2
         }
     }
 
@@ -36,32 +36,36 @@ public class MergeSort extends BaseSort {
     }
 
     private static void merge(Comparable[] a, int lo, int hi) {
-        Comparable[] aux = new Comparable[a.length];
-        // 前半数组
+        int length = a.length;
+        Comparable[] aux = new Comparable[length];
+        int count = lo;
+        // 子数组1
         int i = lo;
-        int i_len = lo + hi;
-        // 后半数组
-        int j = lo + hi;
-        int j_len = j + hi;
-        int count = 0;
+        int i_bound = lo + hi;
+        // 子数组2
+        int j = i_bound;
+        int j_bound = j + hi;
 
-        while (i < i_len && j < j_len && j < a.length) {
+        // 注意j的边界检查
+        while (i < i_bound && j < j_bound && j < length) {
             if (less(a[i], a[j]))
                 aux[count++] = a[i++];
             else
                 aux[count++] = a[j++];
         }
 
-        while (i < i_len && i < a.length) {
+        // i和j都有可能越界
+        while (i < i_bound && i < length) {
             aux[count++] = a[i++];
         }
-        while (j < j_len && j < a.length) {
+        while (j < j_bound && j < length) {
             aux[count++] = a[j++];
         }
-        count = 0;
+
         int k = lo;
-        while (k < j && k < a.length) {
-            a[k++] = aux[count++];
+        while (k < j && k < length) {
+            a[k] = aux[k];
+            k++;
         }
     }
 
