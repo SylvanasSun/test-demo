@@ -19,7 +19,7 @@ public class RedBlackTree<K extends Comparable<K>, V> implements Iterable<K> {
 
     private class Node {
         private int size = 0;
-        private boolean color = true;
+        private boolean color = RED;
         private Node parent, left, right;
         private int orderStatus = 0;
         private K key;
