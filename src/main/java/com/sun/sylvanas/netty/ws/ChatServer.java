@@ -1,6 +1,5 @@
 package com.sun.sylvanas.netty.ws;
 
-import com.sun.org.apache.regexp.internal.RE;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;

@@ -4,8 +4,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.omg.CORBA.CODESET_INCOMPATIBLE;
 
 import javax.net.ssl.SSLContext;
 import java.net.InetSocketAddress;
