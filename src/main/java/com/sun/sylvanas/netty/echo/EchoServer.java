@@ -23,7 +23,7 @@ public class EchoServer {
     }
 
     public void start() throws Exception {
-        final EchoServerHandler serverHandler = new EchoServerHandler();
+        final EchoServerInboundHandler serverHandler = new EchoServerInboundHandler();
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();

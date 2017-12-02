@@ -13,7 +13,7 @@ import io.netty.util.CharsetUtil;
  */
 // Flag this ChannelHandler will be can other ChannelHandler shared.
 @ChannelHandler.Sharable
-public class EchoServerHandler extends ChannelInboundHandlerAdapter {
+public class EchoServerInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {

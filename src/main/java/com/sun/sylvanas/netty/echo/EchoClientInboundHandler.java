@@ -11,7 +11,7 @@ import io.netty.util.CharsetUtil;
  * Created by SylvanasSun on 11/11/2017.
  */
 @ChannelHandler.Sharable
-public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class EchoClientInboundHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     /**
      * Send a message when channel is active.
