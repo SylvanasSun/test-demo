@@ -7,6 +7,11 @@
     <groupId>com.sun..sylvanas</groupId>
     <artifactId>test-demo</artifactId>
     <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <akka-version>2.4.17</akka-version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -95,7 +100,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.3.5</version>
+            <version>4.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -130,22 +135,22 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.11</artifactId>
-            <version>2.3.7</version>
+            <version>${akka-version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-slf4j_2.11</artifactId>
-            <version>2.3.7</version>
+            <version>${akka-version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-agent_2.11</artifactId>
-            <version>2.3.7</version>
+            <version>${akka-version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-testkit_2.11</artifactId>
-            <version>2.3.7</version>
+            <version>${akka-version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
